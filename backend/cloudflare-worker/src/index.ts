@@ -1,6 +1,6 @@
 export interface Env {
   TANTRAKULAM_API_KEY: string;
-  JWT_HS256_SECRET: string;
+  JWT_HS256_SECRET: string;\n  JWT_ISSUER: string;\n  JWT_AUDIENCE: string;
 }
 
 const UPSTREAM = "https://astro.tantragurukul.org";
@@ -40,7 +40,7 @@ export default {
     if (request.method !== "POST") return json({ error: "POST required" }, 405);
     const route = ROUTES[new URL(request.url).pathname];
     if (!route) return json({ error: "Route not found" }, 404);
-    if (!env.TANTRAKULAM_API_KEY || !env.JWT_HS256_SECRET) return json({ error: "Commercial gateway is not configured" }, 503);
+    if (!env.TANTRAKULAM_API_KEY || !env.JWT_HS256_SECRET || !env.JWT_ISSUER || !env.JWT_AUDIENCE) return json({ error: "Commercial gateway is not configured" }, 503);
     const auth = request.headers.get("authorization") || "";
     const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
     if (!(await verifyJwt(token, env.JWT_HS256_SECRET))) return json({ error: "Unauthorised" }, 401);
