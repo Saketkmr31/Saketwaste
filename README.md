@@ -1,48 +1,52 @@
-# Surwi
+# Vedic Compass 360
 
-Surwi is being developed as a public-facing bilingual (Hindi + English), hybrid Android Vedic lifestyle companion.
+A bilingual Android companion for compass direction, educational Vastu reference, sunrise-tithi utilities, birth-profile storage and numerology.
 
-## Product direction
-- Compass 360 and calibration
-- Vastu Shastra: 16 direction sectors and room/entrance guidance
-- Numerology: Mulank, Bhagyank and name-number calculations
-- Vedic astrology: Janma Kundli, Rashi, Lagna, Nakshatra, graha positions and Dasha
-- Hindu Panchang: Tithi, Nakshatra, Yoga, Karana, sunrise/sunset and regional festivals
-- Muhurat and observance calendar
+## Current beta capabilities
 
-## Engineering principles
-- Offline-first for compass, saved profiles, Vastu reference content and deterministic calculators.
-- Hybrid sync for location-specific Panchang, calendar updates and remote content.
-- Explicit user-selected birthplace/city; no silent precise-location collection.
-- Every astronomical result must identify calculation engine, convention, timezone, source and calculation timestamp.
-- Never display guessed Kundli, Panchang, festival or Muhurat values.
+### Available in the app
+- **Compass 360:** live magnetic heading from device sensors, accuracy indicator and calibration guidance. True-north declination correction is not enabled.
+- **Vastu:** 16-sector direction classification, current phone-bearing reference and general room-placement guide. Educational only; not an engineering or building-code assessment.
+- **Panchang:** sunrise-anchored tithi, paksha/lunar-month display, sunrise, sunset and weekday for supported registered cities. Date navigation is available. This is not yet a complete five-limb Panchang.
+- **Birth profile:** name, date of birth and birthplace required; birth time, coordinates and timezone optional. Profile is encrypted locally using Android Keystore-backed AES-GCM after explicit consent.
+- **Numerology:** Mulank, Bhagyank and optional Chaldean name-number arithmetic.
+- **Tithi observance finder:** selected sunrise-tithi matches over the next 120 days. These are candidate tithi matches, not final regional festival assignments.
+- **Muhurat planner:** stores event/date/city/tradition planning inputs locally. It does not yet calculate auspicious windows.
+- **Kundli workspace:** reads and displays the saved birth profile, but does not yet calculate a validated natal chart.
 
-See ARCHITECTURE.md for module boundaries, conventions and release gates.
+## Not yet production-enabled
+- Full five-limb Panchang: Nakshatra, Yoga, Karana and exact transition times.
+- Rahu Kaal, Yamaganda, Gulika, Choghadiya and complete regional festival/vrata observance.
+- Validated Kundli engine: Rashi, Lagna, Nakshatra/Pada, graha longitudes, houses, Navamsha, Vimshottari Dasha and compatibility.
+- Tradition-specific Muhurat windows.
+- True-north correction, global city/timezone resolver and production release signing.
 
-## Current implementation
-- Existing compass UI and sensor pipeline.
-- Domain foundation for 16 Vastu direction sectors.
-- Numerology arithmetic for Mulank, Bhagyank and optional Chaldean name number.
-- Birth profile validation.
-- Sunrise-anchored Tithi, lunar month and sunrise/sunset for registered cities using tithi-engine 5.0.0 (Apache-2.0). Other Panchang limbs, festival rules and Vedic chart calculations are not yet connected.
-- Local language and city preference storage.
+These features must not be advertised as live calculations until their calculation engines, licensing, golden-reference validation and regression tests are complete.
 
-## Calculation engine and attribution
-- Panchang dependency: `io.github.misrilibrary:tithi-engine:5.0.0` (Apache License 2.0).
-- Tithi is evaluated at local sunrise using Purnimant month assignment and the upper-limb sunrise convention.
-- City names are strictly resolved; unknown cities are rejected rather than silently replaced.
-- This dependency calculates Tithi/lunar month and solar times only. It does not provide Nakshatra, Yoga, Karana, festival observance, Muhurat or Janma Kundli.
-- Upstream source and accuracy methodology: https://github.com/misrilibrary/tithi-engine
+## Product engineering principles
+- Never fabricate astronomy, Kundli, Panchang, festival or Muhurat values.
+- Every astronomical output must disclose engine, version, location, timezone, method and calculation time.
+- Unknown birth time/coordinates must reduce precision and must never be silently guessed.
+- Birth details stay on-device in this build; no server upload is implemented.
+- No GPS permission is needed for the compass; city selection is manual.
+- Vastu and numerology outputs are traditional/educational references, not evidence-based predictions or engineering advice.
 
 ## Build and test
-GitHub Actions builds a debug APK on pushes to main and manual workflow dispatch. Open Actions → Build Surwi Compass APK → latest run → Artifacts → surwi-compass-debug-apk.
+GitHub Actions builds a debug APK on pushes to main and manual workflow dispatch:
+1. Open **Actions** → **Build Vedic Compass 360 APK**.
+2. Open the latest successful run.
+3. Download the artifact named **vedic-compass-360-debug-apk**.
 
-A debug APK is for device testing only. It is not a signed Play Store release.
+A debug APK is for testing only and is not a signed Play Store release.
 
-## Privacy and permissions
-The compass does not need GPS. The product is designed to use a city/place explicitly selected by the user for local calendar calculations. Birth details are sensitive personal data: they must not be sent to a server or persisted until explicit consent and privacy design are implemented. Do not add analytics or advertising SDKs without a documented data review.
+## Customer documentation
+- [Customer Operating Procedure (SOP)](docs/CUSTOMER_SOP.md)
+- [Product Architecture](ARCHITECTURE.md)
 
-## References
-- India Meteorological Department, Rashtriya Panchang: https://mausam.imd.gov.in/responsive/rashtriyPanchang.php
-- Android app architecture: https://developer.android.com/topic/architecture
-- Android offline-first architecture: https://developer.android.com/topic/architecture/data-layer/offline-first
+## Calculation references
+- Panchang engine: `io.github.misrilibrary:tithi-engine:5.0.0`, Apache License 2.0.
+- Engine scope and documented validation: https://github.com/misrilibrary/tithi-engine
+- India Meteorological Department Rashtriya Panchang: https://packolkata.imd.gov.in/panchang/en
+
+## Privacy and release gates
+Before production distribution, complete the ephemeris licensing review, privacy policy, consent and retention design, Play Store Data Safety declaration, release signing, Hindi/English review, accessibility testing and golden-reference astronomy tests.
