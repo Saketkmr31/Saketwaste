@@ -57,6 +57,10 @@ export default {
     }
     const missing = route.required.filter(key => !params.has(key));
     if (missing.length) return json({ error: "Missing required parameters", fields: missing }, 400);
+    if (new URL(request.url).pathname === "/api/panchanga" &&
+        !params.has("place") && !(params.has("lat") && params.has("lon") && params.has("tz"))) {
+      return json({ error: "Provide a place or all of lat, lon and tz. The gateway will not use the vendor's default location." }, 400);
+    }
 
     // Do not log request bodies: they can contain personal birth details.
     const upstream = await fetch(UPSTREAM + route.path + "?" + params.toString(), {
