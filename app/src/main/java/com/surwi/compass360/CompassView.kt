@@ -2,8 +2,10 @@ package com.surwi.compass360
 
 import android.content.Context
 import android.graphics.Canvas
+import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.Shader
 import android.graphics.Typeface
 import android.util.AttributeSet
 import android.view.View
@@ -30,9 +32,34 @@ class CompassView @JvmOverloads constructor(context: Context, attrs: AttributeSe
         val cx = width / 2f
         val cy = height / 2f
         val radius = min(width, height) * 0.43f
+
+        // Outer engraved rings and soft inner halo.
         canvas.drawCircle(cx, cy, radius, ringPaint)
         canvas.drawCircle(cx, cy, radius * 0.72f, innerPaint)
         canvas.drawCircle(cx, cy, radius * 0.52f, innerPaint)
+
+        // Large embossed Swastik watermark, kept inside the compass face.
+        val symbolSize = radius * 1.42f
+        val symbol = "卐"
+        val symbolPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            textAlign = Paint.Align.CENTER
+            textSize = symbolSize
+            typeface = Typeface.create("serif", Typeface.BOLD)
+            alpha = 105
+            style = Paint.Style.FILL
+            shader = LinearGradient(cx, cy - symbolSize * 0.48f, cx, cy + symbolSize * 0.30f,
+                intArrayOf(0xFFFFE5A0.toInt(), 0xFFD99A35.toInt(), 0xFF8B4A16.toInt()), null, Shader.TileMode.CLAMP)
+            setShadowLayer(8f, 3f, 5f, 0xCC000000.toInt())
+        }
+        canvas.drawText(symbol, cx, cy + symbolSize * 0.34f, symbolPaint)
+        symbolPaint.clearShadowLayer()
+        symbolPaint.shader = null
+        symbolPaint.style = Paint.Style.STROKE
+        symbolPaint.strokeWidth = 1.4f
+        symbolPaint.color = 0x88FFE4A0.toInt()
+        canvas.drawText(symbol, cx, cy + symbolSize * 0.34f, symbolPaint)
+
+        // Rotating azimuth dial; fixed pointer remains at the top of the screen.
         canvas.save()
         canvas.rotate(-heading, cx, cy)
         for (i in 0 until 72) {
@@ -49,12 +76,13 @@ class CompassView @JvmOverloads constructor(context: Context, attrs: AttributeSe
             canvas.drawText(labels[i], cx + (cos(angle) * r).toFloat(), cy + (sin(angle) * r).toFloat() + 7f, textPaint)
         }
         canvas.restore()
-        val north = Path().apply { moveTo(cx, cy - radius * 0.69f); lineTo(cx - 14f, cy + 8f); lineTo(cx + 14f, cy + 8f); close() }
-        val south = Path().apply { moveTo(cx, cy + radius * 0.69f); lineTo(cx - 14f, cy - 8f); lineTo(cx + 14f, cy - 8f); close() }
+
+        // Gold and saffron needle with a small jewel at its pivot.
+        val north = Path().apply { moveTo(cx, cy - radius * 0.69f); lineTo(cx - 11f, cy + 8f); lineTo(cx + 11f, cy + 8f); close() }
+        val south = Path().apply { moveTo(cx, cy + radius * 0.69f); lineTo(cx - 11f, cy - 8f); lineTo(cx + 11f, cy - 8f); close() }
         canvas.drawPath(north, redPaint)
         canvas.drawPath(south, goldPaint)
-        val symbolPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = gold; textAlign = Paint.Align.CENTER; textSize = 28f; typeface = Typeface.create("serif", Typeface.BOLD) }
-        canvas.drawText("卐", cx, cy + 10f, symbolPaint)
-        canvas.drawCircle(cx, cy, 5f, centerPaint)
+        canvas.drawCircle(cx, cy, 7f, goldPaint)
+        canvas.drawCircle(cx, cy, 3f, centerPaint)
     }
 }
