@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">Surwi</string>
+    <string name="brand_tagline">VEDIC COMPASS • VASTU • PANCHANG</string>
+    <string name="language_english">English</string>
+    <string name="language_hindi">हिन्दी</string>
+    <string name="compass">Compass 360</string>
+    <string name="vastu">Vastu Shastra</string>
+    <string name="numerology">Numerology</string>
+    <string name="kundli">Janma Kundli</string>
+    <string name="panchang">Daily Panchang</string>
+    <string name="festivals">Hindu Calendar &amp; Festivals</string>
+    <string name="muhurat">Muhurat</string>
+    <string name="profile">Birth Profile</string>
+    <string name="select_city">Select your city</string>
+    <string name="calculation_disclaimer">Traditional guidance; not a scientific prediction.</string>
+</resources>
