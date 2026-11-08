@@ -194,3 +194,14 @@ The product has selected TantraGurukul / Tantrakulam's Commercial API as the int
 **This integration is not live in the current APK.** The app must not display vendor-derived Kundli, full Panchang or Muhurat results until the commercial licence is active, the secure first-party gateway and authentication are deployed, privacy consent is implemented, and calculation regression tests pass. Existing local Tithi output remains a limited feature, not a complete Panchang.
 
 Commercial engine details and release gates: see the product's Commercial Engine Integration document in the source repository.
+
+## 18. Guided date, time and place selection
+
+- Date of birth and preferred event dates are selected with the Android calendar picker; future dates are blocked for date of birth.
+- Birth time and preferred event time use the native time picker. Time is stored in 24-hour HH:mm format after selection.
+- Place can be resolved by searching a locality/city name. The user must select the matching result; the app fills the returned coordinates.
+- Alternatively, the user can select a point on the interactive OpenStreetMap picker. The app stores the selected latitude and longitude and attempts reverse-geocoding to a readable place name.
+- OpenStreetMap map tiles require an internet connection and include OpenStreetMap attribution. If map tiles or geocoding are unavailable, the user can use place-name search or enter coordinates manually.
+- A pin identifies the selected point, not proof of the historical birth address. Confirm the correct locality, date, local clock time and timezone before requesting a chart.
+- Date/time/place pickers improve data entry only. They do not activate or replace the licensed commercial astronomy engine. No Kundli or Muhurat result should be represented as calculated until the production engine and validation gates are complete.
+
