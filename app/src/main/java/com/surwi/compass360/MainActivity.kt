@@ -289,15 +289,15 @@ class MainActivity : Activity(), SensorEventListener {
     }
     private fun profile() {
         header("Birth Profile", "Private on-device profile · जन्म विवरण")
-        content.addView(label("Kundli needs DOB, exact local birth time, birthplace, coordinates and timezone. Approximate birth time must be flagged.", 13f, ivory))
+        content.addView(label("Enter your date of birth and birth city. Birth time and latitude/longitude are OPTIONAL. If unknown, leave them blank: a city-based approximate location can be used and the chart must be marked approximate. Exact time and coordinates improve accuracy.", 13f, ivory))
         val current = BirthProfileStore(this).load()
         val name = field("Profile name", current?.getOrNull(0) ?: "")
         val dob = field("DOB · YYYY-MM-DD", current?.getOrNull(1) ?: "")
-        val time = field("Birth time · HH:MM (24-hour)", current?.getOrNull(2) ?: "")
+        val time = field("Birth time · optional · HH:MM (24-hour)", current?.getOrNull(2) ?: "")
         val place = field("Birth city / place", current?.getOrNull(3) ?: "")
-        val latitude = field("Birth latitude · e.g. 23.2599", current?.getOrNull(4) ?: "")
-        val longitude = field("Birth longitude · e.g. 77.4126", current?.getOrNull(5) ?: "")
-        val zone = field("Timezone · e.g. Asia/Kolkata", current?.getOrNull(6) ?: "Asia/Kolkata")
+        val latitude = field("Birth latitude · optional · e.g. 23.2599", current?.getOrNull(4) ?: "")
+        val longitude = field("Birth longitude · optional · e.g. 77.4126", current?.getOrNull(5) ?: "")
+        val zone = field("Timezone · optional · default Asia/Kolkata", current?.getOrNull(6) ?: "Asia/Kolkata")
         listOf(name, dob, time, place, latitude, longitude, zone).forEach {
             content.addView(it, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
         }
@@ -314,15 +314,23 @@ class MainActivity : Activity(), SensorEventListener {
                 try {
                     val parsed = LocalDate.parse(dob.text.toString().trim())
                     require(!parsed.isAfter(LocalDate.now())) { "DOB cannot be in the future." }
-                    require(name.text.isNotBlank() && place.text.isNotBlank()) { "Enter profile name and birthplace." }
-                    require(time.text.matches(Regex("^([01]?[0-9]|2[0-3]):[0-5][0-9]$"))) { "Birth time must be HH:MM." }
-                    val lat = latitude.text.toString().toDouble()
-                    val lon = longitude.text.toString().toDouble()
-                    require(lat in -90.0..90.0) { "Latitude must be between -90 and 90." }
-                    require(lon in -180.0..180.0) { "Longitude must be between -180 and 180." }
-                    java.time.ZoneId.of(zone.text.toString().ifBlank { "Asia/Kolkata" })
-                    BirthProfileStore(this).save(name.text.toString(), parsed.toString(), time.text.toString(), place.text.toString(), lat.toString(), lon.toString(), zone.text.toString().ifBlank { "Asia/Kolkata" })
-                    Toast.makeText(this, "Saved encrypted on this device.", Toast.LENGTH_LONG).show()
+                    require(name.text.isNotBlank() && place.text.isNotBlank()) { "Enter profile name and birth city/place. Time and coordinates are optional." }
+                    val birthTime = time.text.toString().trim()
+                    require(birthTime.isBlank() || birthTime.matches(Regex("^([01]?[0-9]|2[0-3]):[0-5][0-9]$"))) { "If known, birth time must be HH:MM." }
+                    val latText = latitude.text.toString().trim()
+                    val lonText = longitude.text.toString().trim()
+                    require(latText.isBlank() == lonText.isBlank()) { "Enter both latitude and longitude, or leave both blank." }
+                    if (latText.isNotBlank()) {
+                        val lat = latText.toDouble()
+                        val lon = lonText.toDouble()
+                        require(lat in -90.0..90.0) { "Latitude must be between -90 and 90." }
+                        require(lon in -180.0..180.0) { "Longitude must be between -180 and 180." }
+                    }
+                    val timezone = zone.text.toString().trim().ifBlank { "Asia/Kolkata" }
+                    java.time.ZoneId.of(timezone)
+                    BirthProfileStore(this).save(name.text.toString(), parsed.toString(), birthTime, place.text.toString(), latText, lonText, timezone)
+                    val quality = if (birthTime.isBlank() || latText.isBlank()) "Approximate profile saved. Exact time/coordinates can be added later." else "Profile saved with supplied birth details."
+                    Toast.makeText(this, quality, Toast.LENGTH_LONG).show()
                 } catch (e: Exception) {
                     Toast.makeText(this, e.message ?: "Check profile fields.", Toast.LENGTH_LONG).show()
                 }
@@ -333,7 +341,7 @@ class MainActivity : Activity(), SensorEventListener {
             Toast.makeText(this, "Profile deleted.", Toast.LENGTH_SHORT).show()
             render()
         }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7) })
-        content.addView(label("No account or server upload is used for this local profile. Cloud sync would require separate consent.", 12f, muted))
+        content.addView(label("Required: date of birth, profile name and birth city. Optional: birth time, latitude, longitude and timezone. Missing time/location reduces chart precision; any derived result must be labelled approximate. You can add details later.\nNo account or server upload is used for this local profile. Cloud sync would require separate consent.", 12f, muted))
     }
 
     private fun numerology() {
