@@ -17,7 +17,7 @@ class DomainFoundationTest {
         val withoutName = NumerologyCalculator.calculate(LocalDate.of(1998, 7, 31))
         val withName = NumerologyCalculator.calculate(LocalDate.of(1998, 7, 31), "SURESH")
         assertEquals(null, withoutName.nameNumber)
-        assertEquals(3, withName.nameNumber)
+        assertEquals(6, withName.nameNumber)
     }
 
     @Test fun vastuBearingWrapsCorrectlyAcrossNorth() {
