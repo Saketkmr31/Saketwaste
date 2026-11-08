@@ -16,6 +16,10 @@ import android.view.Surface
 import android.view.View
 import android.view.WindowInsets
 import android.view.WindowManager
+import android.webkit.JavascriptInterface
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import android.location.Geocoder
 import android.widget.*
 import com.surwi.compass360.domain.numerology.NumerologyCalculator
 import com.surwi.compass360.domain.numerology.ReductionRule
@@ -342,15 +346,24 @@ class MainActivity : Activity(), SensorEventListener {
         content.addView(label("Enter your date of birth and birth city. Birth time and latitude/longitude are OPTIONAL. If unknown, leave them blank: a city-based approximate location can be used and the chart must be marked approximate. Exact time and coordinates improve accuracy.", 13f, ivory))
         val current = BirthProfileStore(this).load()
         val name = field("Profile name", current?.getOrNull(0) ?: "")
-        val dob = field("DOB · YYYY-MM-DD", current?.getOrNull(1) ?: "")
-        val time = field("Birth time · optional · HH:MM (24-hour)", current?.getOrNull(2) ?: "")
+        val dob = field("Date of birth", current?.getOrNull(1) ?: "").apply { isFocusable = false; isClickable = true }
+        val time = field("Birth time · optional", current?.getOrNull(2) ?: "").apply { isFocusable = false; isClickable = true }
         val place = field("Birth city / place", current?.getOrNull(3) ?: "")
-        val latitude = field("Birth latitude · optional · e.g. 23.2599", current?.getOrNull(4) ?: "")
-        val longitude = field("Birth longitude · optional · e.g. 77.4126", current?.getOrNull(5) ?: "")
-        val zone = field("Timezone · optional · default Asia/Kolkata", current?.getOrNull(6) ?: "Asia/Kolkata")
-        listOf(name, dob, time, place, latitude, longitude, zone).forEach {
-            content.addView(it, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
-        }
+        val latitude = field("Latitude · auto-filled from map or place search", current?.getOrNull(4) ?: "")
+        val longitude = field("Longitude · auto-filled from map or place search", current?.getOrNull(5) ?: "")
+        val zone = field("Timezone · e.g. Asia/Kolkata", current?.getOrNull(6) ?: "Asia/Kolkata")
+        content.addView(name, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
+        content.addView(dob, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(5) })
+        content.addView(button("▦  Select birth date", false) { showDatePicker(dob, true) }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
+        content.addView(time, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(5) })
+        content.addView(button("◷  Select birth time", false) { showTimePicker(time) }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
+        section("BIRTH PLACE · जन्म स्थान")
+        content.addView(place, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(6) })
+        content.addView(button("Search place name and coordinates", false) { resolvePlace(place, latitude, longitude) }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(6) })
+        content.addView(button("⌖  Pick exact point on map", true) { openMapPicker(place, latitude, longitude) }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
+        content.addView(latitude, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(6) })
+        content.addView(longitude, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(6) })
+        content.addView(zone, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
         val consent = CheckBox(this).apply {
             text = "I agree to save this profile encrypted on this device only."
             setTextColor(ivory)
@@ -399,9 +412,10 @@ class MainActivity : Activity(), SensorEventListener {
         content.addView(label("Enter DOB as YYYY-MM-DD. Name number uses a Chaldean letter-value table. The arithmetic convention is shown with the result.", 13f, muted))
         val savedProfile = BirthProfileStore(this).load()
         val fullName = field("Full name (optional)", savedProfile?.getOrNull(0) ?: "")
-        val dob = field("DOB · YYYY-MM-DD, e.g. 1998-07-31", savedProfile?.getOrNull(1) ?: "")
+        val dob = field("Date of birth", savedProfile?.getOrNull(1) ?: "").apply { isFocusable = false; isClickable = true }
         content.addView(fullName, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
-        content.addView(dob, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
+        content.addView(dob, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(5) })
+        content.addView(button("▦  Choose date of birth", false) { showDatePicker(dob, true) }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
         val result = label("Your result will appear here.", 14f, ivory)
         card(result)
         content.addView(button("Calculate / गणना करें") {
@@ -469,10 +483,22 @@ class MainActivity : Activity(), SensorEventListener {
             android.app.AlertDialog.Builder(this).setTitle("Choose event")
                 .setItems(events.toTypedArray()) { _, which -> selectedMuhuratEvent = events[which]; render() }.show()
         }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
-        val targetDate = field("Preferred date · YYYY-MM-DD", selectedPanchangDate.toString())
-        val eventCity = field("City / शहर", city)
-        val tradition = field("Tradition (e.g. Smarta / Vaishnava / regional)", "General")
-        listOf(targetDate, eventCity, tradition).forEach { content.addView(it, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) }) }
+        val targetDate = field("Preferred date", selectedPanchangDate.toString()).apply { isFocusable = false; isClickable = true }
+        val targetTime = field("Preferred time · optional", "").apply { isFocusable = false; isClickable = true }
+        val eventCity = field("City / place", city)
+        val eventLat = field("Latitude · optional", "")
+        val eventLon = field("Longitude · optional", "")
+        val tradition = field("Tradition", "General")
+        content.addView(targetDate, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(5) })
+        content.addView(button("▦  Choose preferred date", false) { showDatePicker(targetDate, false) }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(7) })
+        content.addView(targetTime, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(5) })
+        content.addView(button("◷  Choose preferred time", false) { showTimePicker(targetTime) }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
+        content.addView(eventCity, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(6) })
+        content.addView(button("Search place name", false) { resolvePlace(eventCity, eventLat, eventLon) }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(6) })
+        content.addView(button("⌖  Select on map", false) { openMapPicker(eventCity, eventLat, eventLon) }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
+        content.addView(eventLat, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(6) })
+        content.addView(eventLon, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
+        content.addView(tradition, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
         card(label("REQUEST SUMMARY", 10f, gold, true),
             label(selectedMuhuratEvent, 16f, ivory, true),
             label("A full recommendation must validate tithi, nakshatra, yoga, karana, weekday, local sunrise/sunset, Rahu Kaal and event-specific tradition rules.", 12f, muted))
@@ -481,7 +507,7 @@ class MainActivity : Activity(), SensorEventListener {
                 val date = LocalDate.parse(targetDate.text.toString().trim())
                 getSharedPreferences("muhurat_requests", MODE_PRIVATE).edit()
                     .putString("date", date.toString()).putString("city", eventCity.text.toString().trim())
-                    .putString("event", selectedMuhuratEvent).putString("tradition", tradition.text.toString().trim()).apply()
+                    .putString("event", selectedMuhuratEvent).putString("time", targetTime.text.toString().trim()).putString("latitude", eventLat.text.toString().trim()).putString("longitude", eventLon.text.toString().trim()).putString("tradition", tradition.text.toString().trim()).apply()
                 Toast.makeText(this, "Planning details saved on this device. No auspicious time has been calculated.", Toast.LENGTH_LONG).show()
             } catch (_: Exception) { Toast.makeText(this, "Enter date as YYYY-MM-DD.", Toast.LENGTH_SHORT).show() }
         })
@@ -546,6 +572,90 @@ class MainActivity : Activity(), SensorEventListener {
             column.addView(label(item.second, 10f, if (screen == item.third) gold else muted, screen == item.third).apply { gravity = Gravity.CENTER })
             nav.addView(column, LinearLayout.LayoutParams(0, -2, 1f))
         }
+    }
+
+    private fun showDatePicker(target: EditText, noFuture: Boolean) {
+        val initial = runCatching { LocalDate.parse(target.text.toString()) }.getOrElse { LocalDate.now() }
+        val picker = android.app.DatePickerDialog(this, { _, year, month, day ->
+            target.setText(LocalDate.of(year, month + 1, day).toString())
+        }, initial.year, initial.monthValue - 1, initial.dayOfMonth)
+        if (noFuture) picker.datePicker.maxDate = System.currentTimeMillis()
+        picker.show()
+    }
+
+    private fun showTimePicker(target: EditText) {
+        val parsed = runCatching { java.time.LocalTime.parse(target.text.toString()) }.getOrElse { java.time.LocalTime.NOON }
+        android.app.TimePickerDialog(this, { _, hour, minute ->
+            target.setText(String.format(Locale.US, "%02d:%02d", hour, minute))
+        }, parsed.hour, parsed.minute, false).show()
+    }
+
+    private fun resolvePlace(place: EditText, latitude: EditText, longitude: EditText) {
+        val query = place.text.toString().trim()
+        if (query.isBlank()) { Toast.makeText(this, "Enter a city or place name first.", Toast.LENGTH_SHORT).show(); return }
+        try {
+            @Suppress("DEPRECATION")
+            val matches = Geocoder(this, Locale.getDefault()).getFromLocationName(query, 5)
+            if (matches.isNullOrEmpty()) { Toast.makeText(this, "No matching place found. Try a more specific name or use the map.", Toast.LENGTH_LONG).show(); return }
+            val options = matches.map { a ->
+                listOfNotNull(a.featureName, a.locality, a.adminArea, a.countryName).distinct().joinToString(", ") +
+                    String.format(Locale.US, "  (%.5f, %.5f)", a.latitude, a.longitude)
+            }.toTypedArray()
+            android.app.AlertDialog.Builder(this).setTitle("Choose the correct matching place")
+                .setItems(options) { _, which ->
+                    val a = matches[which]
+                    latitude.setText(String.format(Locale.US, "%.6f", a.latitude))
+                    longitude.setText(String.format(Locale.US, "%.6f", a.longitude))
+                    place.setText(listOfNotNull(a.locality ?: a.subAdminArea, a.adminArea, a.countryName).distinct().joinToString(", "))
+                }.setNegativeButton("Cancel", null).show()
+        } catch (e: Exception) {
+            Toast.makeText(this, "Place lookup unavailable. Check internet or select on map.", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun openMapPicker(place: EditText, latitude: EditText, longitude: EditText) {
+        val startLat = latitude.text.toString().toDoubleOrNull() ?: 23.2599
+        val startLon = longitude.text.toString().toDoubleOrNull() ?: 77.4126
+        val web = WebView(this).apply {
+            settings.javaScriptEnabled = true
+            settings.domStorageEnabled = true
+            webViewClient = WebViewClient()
+            addJavascriptInterface(object {
+                @JavascriptInterface fun picked(lat: Double, lon: Double) {
+                    runOnUiThread {
+                        latitude.setText(String.format(Locale.US, "%.6f", lat))
+                        longitude.setText(String.format(Locale.US, "%.6f", lon))
+                        try {
+                            @Suppress("DEPRECATION")
+                            val found = Geocoder(this@MainActivity, Locale.getDefault()).getFromLocation(lat, lon, 1)
+                            found?.firstOrNull()?.let { a ->
+                                place.setText(listOfNotNull(a.locality ?: a.subAdminArea, a.adminArea, a.countryName).distinct().joinToString(", "))
+                            }
+                        } catch (_: Exception) { }
+                        Toast.makeText(this@MainActivity, "Map coordinates selected.", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }, "AndroidPicker")
+        }
+        val html = """
+            <!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">
+            <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+            <style>html,body,#map{height:100%;margin:0;background:#1f0c08} .hint{position:absolute;z-index:1000;top:10px;left:10px;right:10px;background:#391911;color:#fff1d4;padding:10px;border-radius:10px;font:14px sans-serif}</style>
+            <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script></head>
+            <body><div class="hint">Tap the exact birth location on the map, then press Use this location.</div><div id="map"></div>
+            <script>
+            const map=L.map('map').setView([$startLat,$startLon],12);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(map);
+            let marker=L.marker([$startLat,$startLon]).addTo(map);
+            map.on('click',e=>{marker.setLatLng(e.latlng);window.selected=e.latlng;});
+            window.selected=L.latLng($startLat,$startLon);
+            </script><button onclick="AndroidPicker.picked(window.selected.lat,window.selected.lng)" style="position:absolute;z-index:1001;bottom:18px;left:5%;width:90%;padding:15px;background:#ffcd70;border:0;border-radius:12px;font-weight:bold">Use this location</button></body></html>
+        """.trimIndent()
+        val dialog = android.app.AlertDialog.Builder(this).setTitle("Select exact place on map").setView(web)
+            .setNegativeButton("Cancel", null).create()
+        dialog.show()
+        dialog.window?.setLayout(-1, dp(560))
+        web.loadDataWithBaseURL("https://www.openstreetmap.org", html, "text/html", "UTF-8", null)
     }
 
     private fun chooseCity() {
