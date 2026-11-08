@@ -281,8 +281,10 @@ class MainActivity : Activity(), SensorEventListener {
         val dob = field("DOB · YYYY-MM-DD", current?.getOrNull(1) ?: "")
         val time = field("Birth time · HH:MM (24-hour)", current?.getOrNull(2) ?: "")
         val place = field("Birth city / place", current?.getOrNull(3) ?: "")
-        val zone = field("Timezone · e.g. Asia/Kolkata", current?.getOrNull(4) ?: "Asia/Kolkata")
-        listOf(name, dob, time, place, zone).forEach {
+        val latitude = field("Birth latitude · e.g. 23.2599", current?.getOrNull(4) ?: "")
+        val longitude = field("Birth longitude · e.g. 77.4126", current?.getOrNull(5) ?: "")
+        val zone = field("Timezone · e.g. Asia/Kolkata", current?.getOrNull(6) ?: "Asia/Kolkata")
+        listOf(name, dob, time, place, latitude, longitude, zone).forEach {
             content.addView(it, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
         }
         val consent = CheckBox(this).apply {
@@ -300,7 +302,12 @@ class MainActivity : Activity(), SensorEventListener {
                     require(!parsed.isAfter(LocalDate.now())) { "DOB cannot be in the future." }
                     require(name.text.isNotBlank() && place.text.isNotBlank()) { "Enter profile name and birthplace." }
                     require(time.text.matches(Regex("^([01]?[0-9]|2[0-3]):[0-5][0-9]$"))) { "Birth time must be HH:MM." }
-                    BirthProfileStore(this).save(name.text.toString(), parsed.toString(), time.text.toString(), place.text.toString(), zone.text.toString().ifBlank { "Asia/Kolkata" })
+                    val lat = latitude.text.toString().toDouble()
+                    val lon = longitude.text.toString().toDouble()
+                    require(lat in -90.0..90.0) { "Latitude must be between -90 and 90." }
+                    require(lon in -180.0..180.0) { "Longitude must be between -180 and 180." }
+                    java.time.ZoneId.of(zone.text.toString().ifBlank { "Asia/Kolkata" })
+                    BirthProfileStore(this).save(name.text.toString(), parsed.toString(), time.text.toString(), place.text.toString(), lat.toString(), lon.toString(), zone.text.toString().ifBlank { "Asia/Kolkata" })
                     Toast.makeText(this, "Saved encrypted on this device.", Toast.LENGTH_LONG).show()
                 } catch (e: Exception) {
                     Toast.makeText(this, e.message ?: "Check profile fields.", Toast.LENGTH_LONG).show()
