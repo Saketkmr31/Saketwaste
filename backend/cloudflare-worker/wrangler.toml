@@ -1,0 +1,10 @@
+name = "vedic-compass360-gateway"
+main = "src/index.ts"
+compatibility_date = "2026-11-08"
+workers_dev = true
+
+# Set these with wrangler secret put; never commit their values.
+# TANTRAKULAM_API_KEY
+# JWT_HS256_SECRET
+# JWT_ISSUER
+# JWT_AUDIENCE
