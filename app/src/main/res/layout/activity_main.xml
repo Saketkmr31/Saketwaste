@@ -1,57 +1,60 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent" android:layout_height="match_parent"
-    android:background="#101C2C" android:fillViewport="true">
+    android:background="#27100B" android:fillViewport="true">
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
         android:orientation="vertical" android:gravity="center_horizontal" android:padding="20dp">
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:text="SURWI COMPASS 360" android:textColor="#FFFFFF" android:textSize="21sp"
-            android:textStyle="bold" android:gravity="center" android:paddingTop="14dp"/>
+            android:text="ॐ  SURWI" android:textColor="#FFD27A" android:textSize="28sp"
+            android:textStyle="bold" android:gravity="center" android:paddingTop="16dp"/>
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="VEDIC COMPASS  •  VASTU  •  PANCHANG" android:textColor="#E8B978"
+            android:textSize="10sp" android:letterSpacing="0.12" android:gravity="center" android:paddingBottom="16dp"/>
         <TextView android:id="@+id/sensorStatus" android:layout_width="wrap_content"
             android:layout_height="wrap_content" android:text="Starting sensors…"
-            android:textColor="#B9C8D9" android:textSize="13sp" android:padding="12dp"/>
+            android:textColor="#E8CDA7" android:textSize="12sp" android:padding="10dp"/>
         <TextView android:id="@+id/direction" android:layout_width="wrap_content"
-            android:layout_height="wrap_content" android:text="--" android:textColor="#FFFFFF"
-            android:textSize="48sp" android:textStyle="bold"/>
+            android:layout_height="wrap_content" android:text="--" android:textColor="#FFF1D4"
+            android:textSize="42sp" android:textStyle="bold"/>
         <TextView android:id="@+id/degrees" android:layout_width="wrap_content"
-            android:layout_height="wrap_content" android:text="---.-°" android:textColor="#D4E1EF"
-            android:textSize="21sp" android:paddingBottom="8dp"/>
+            android:layout_height="wrap_content" android:text="---°" android:textColor="#FFD27A"
+            android:textSize="28sp" android:textStyle="bold" android:paddingBottom="4dp"/>
         <com.surwi.compass360.CompassView android:id="@+id/compassView"
-            android:layout_width="match_parent" android:layout_height="330dp"
-            android:layout_marginTop="8dp" android:layout_marginBottom="12dp"/>
+            android:layout_width="match_parent" android:layout_height="310dp"
+            android:layout_marginTop="4dp" android:layout_marginBottom="12dp"/>
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
             android:orientation="horizontal" android:weightSum="2">
             <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
-                android:layout_weight="1" android:orientation="vertical" android:background="#1B2B40"
+                android:layout_weight="1" android:orientation="vertical" android:background="#482017"
                 android:padding="14dp" android:layout_marginEnd="5dp">
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="MAGNETIC HEADING" android:textColor="#AFC0D3" android:textSize="11sp"/>
+                    android:text="LIVE HEADING" android:textColor="#E8B978" android:textSize="10sp"/>
                 <TextView android:id="@+id/headingValue" android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" android:text="---.-°" android:textColor="#FFFFFF"
+                    android:layout_height="wrap_content" android:text="---°" android:textColor="#FFF1D4"
                     android:textSize="20sp" android:textStyle="bold"/>
             </LinearLayout>
             <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
-                android:layout_weight="1" android:orientation="vertical" android:background="#1B2B40"
+                android:layout_weight="1" android:orientation="vertical" android:background="#482017"
                 android:padding="14dp" android:layout_marginStart="5dp">
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="SENSOR ACCURACY" android:textColor="#AFC0D3" android:textSize="11sp"/>
+                    android:text="SENSOR ACCURACY" android:textColor="#E8B978" android:textSize="10sp"/>
                 <TextView android:id="@+id/accuracyValue" android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" android:text="Checking…" android:textColor="#FFFFFF"
+                    android:layout_height="wrap_content" android:text="Checking…" android:textColor="#FFF1D4"
                     android:textSize="20sp" android:textStyle="bold"/>
             </LinearLayout>
         </LinearLayout>
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:text="VASTU &amp; PUJA REFERENCE" android:textColor="#FFFFFF" android:textStyle="bold"
-            android:textSize="15sp" android:paddingTop="22dp" android:paddingBottom="8dp"/>
+            android:text="✦  VEDIC GUIDANCE" android:textColor="#FFD27A" android:textStyle="bold"
+            android:textSize="16sp" android:paddingTop="24dp" android:paddingBottom="10dp"/>
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:background="#1B2B40" android:padding="15dp" android:textColor="#E7EEF7"
-            android:textSize="14sp" android:lineSpacingExtra="5dp"
-            android:text="• Mandir placement: North-East (NE), traditionally preferred&#10;• While praying: face East or North&#10;• Arrange idols facing the worshipper; follow your family tradition.&#10;&#10;Traditional guidance only, not scientific rules. Confirm your room's actual directions before placing the mandir."/>
+            android:background="#482017" android:padding="16dp" android:textColor="#FFF1D4"
+            android:textSize="14sp" android:lineSpacingExtra="6dp"
+            android:text="PUJA / MANDIR  ·  North-East (Ishanya) is a traditional preference.&#10;&#10;KITCHEN  ·  South-East (Agneya) is a traditional placement.&#10;&#10;PRAYER  ·  Facing East or North is a common household convention.&#10;&#10;These are traditional references, not scientific guarantees. Existing home layouts do not need demolition."/>
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:text="CALIBRATION TIP" android:textColor="#FFFFFF" android:textStyle="bold"
-            android:textSize="15sp" android:paddingTop="18dp" android:paddingBottom="6dp"/>
+            android:text="CALIBRATION &amp; ACCURACY" android:textColor="#FFD27A" android:textStyle="bold"
+            android:textSize="15sp" android:paddingTop="20dp" android:paddingBottom="7dp"/>
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:text="If the heading jumps or accuracy is low, move the phone slowly in a figure-eight pattern. Keep it away from magnets, metal objects, speakers and magnetic phone cases. This app shows magnetic north, not necessarily true/geographic north."
-            android:textColor="#B9C8D9" android:textSize="13sp" android:lineSpacingExtra="4dp"
-            android:paddingBottom="20dp"/>
+            android:text="For calibration, slowly move the phone in a figure-eight pattern. Keep it away from magnetic covers, speakers, vehicles and steel furniture. This compass reports magnetic north; true north requires location-based magnetic declination correction."
+            android:textColor="#E8CDA7" android:textSize="13sp" android:lineSpacingExtra="5dp"
+            android:paddingBottom="22dp"/>
     </LinearLayout>
 </ScrollView>
