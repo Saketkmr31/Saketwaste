@@ -16,8 +16,8 @@ class CompassView @JvmOverloads constructor(context: Context, attrs: AttributeSe
     private val gold = 0xFFFFC65C.toInt()
     private val ivory = 0xFFFFE8BD.toInt()
     private val ringPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = gold; style = Paint.Style.STROKE; strokeWidth = 3f }
-    private val innerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x66FFC65C; style = Paint.Style.STROKE; strokeWidth = 1.5f }
-    private val tickPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFD8A84E; strokeWidth = 2f }
+    private val innerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x66FFC65C.toInt(); style = Paint.Style.STROKE; strokeWidth = 1.5f }
+    private val tickPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFD8A84E.toInt(); strokeWidth = 2f }
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = ivory; textAlign = Paint.Align.CENTER; textSize = 21f; typeface = Typeface.create("serif", Typeface.BOLD) }
     private val redPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFE87535.toInt() }
     private val goldPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = gold }
