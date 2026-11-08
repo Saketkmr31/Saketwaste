@@ -50,3 +50,14 @@ A debug APK is for testing only and is not a signed Play Store release.
 
 ## Privacy and release gates
 Before production distribution, complete the ephemeris licensing review, privacy policy, consent and retention design, Play Store Data Safety declaration, release signing, Hindi/English review, accessibility testing and golden-reference astronomy tests.
+
+
+## Proprietary commercial Jyotish engine
+
+Selected provider target: TantraGurukul / Tantrakulam Commercial API, subject to a signed production grant and paid key. The vendor currently advertises ₹36,000/year and 250,000 standard monthly credits for Commercial; credit weights vary. Kundali book PDF/mobile pack and multi-day Panchanga range/month routes are Enterprise-only. See docs/COMMERCIAL_ENGINE_INTEGRATION.md.
+
+The Android client calls a first-party authenticated gateway only. The vendor API key must remain in server-side secret storage. Source scaffolds:
+- Android gateway client: app/src/main/java/com/surwi/compass360/domain/astronomy/CommercialAstrologyGateway.kt
+- Cloudflare Worker proxy: backend/cloudflare-worker/src/index.ts
+
+The gateway URL is supplied using Gradle property COMMERCIAL_API_BASE_URL and defaults to blank. The gateway is not live until the commercial key, JWT identity service, Cloudflare deployment, secrets, rate limits and privacy controls are configured. Do not put a vendor key or static client token in the APK.
