@@ -19,6 +19,7 @@ import android.view.WindowManager
 import android.widget.*
 import com.surwi.compass360.domain.numerology.NumerologyCalculator
 import com.surwi.compass360.domain.numerology.ReductionRule
+import com.surwi.compass360.domain.panchang.DrikPanchangService
 import com.surwi.compass360.domain.vastu.VastuDirectionCatalog
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -215,7 +216,7 @@ class MainActivity : Activity(), SensorEventListener {
         section("DAILY TOOLS  ·  दैनिक साधन")
         feature("Compass 360", "Live direction · calibration", "◉", "compass")
         feature("Vastu Shastra", "16 directions · room guidance", "⌖", "vastu")
-        feature("Daily Panchang", "Tithi · Nakshatra · Yoga · Karana", "▦", "panchang", false)
+        feature("Daily Panchang", "Sunrise Tithi · lunar month · sunrise/sunset", "▦", "panchang")
         section("JYOTISH & PERSONAL TOOLS")
         feature("Janma Kundli", "Rashi · Lagna · Nakshatra · Dasha", "✧", "kundli", false)
         feature("Numerology", "Mulank · Bhagyank · name number", "№", "numerology")
@@ -258,21 +259,34 @@ class MainActivity : Activity(), SensorEventListener {
     }
 
     private fun panchang() {
-        header("Hindu Panchang", "Daily calendar · दैनिक पंचांग")
-        card(label("SELECTED CITY", 10f, gold, true), label(city, 20f, ivory, true),
-            label(LocalDate.now().format(DateTimeFormatter.ofPattern("dd MMMM yyyy", Locale.ENGLISH)), 12f, muted),
-            label("Live Panchang calculations are not connected in this build.", 14f, gold, true),
-            label("We will not guess today's Tithi, Nakshatra, Yoga, Karana or sunrise. These require validated astronomy and local time/location rules.", 12f, ivory))
-        section("PANCHANG LIMBS")
-        listOf("Vara / वार", "Tithi / तिथि", "Nakshatra / नक्षत्र", "Yoga / योग", "Karana / करण", "Paksha / पक्ष", "Sunrise & sunset / सूर्योदय-सूर्यास्त", "Moonrise & moonset / चन्द्रोदय-चन्द्रास्त").forEach {
-            card(label(it, 14f, ivory, true), label("Awaiting verified city-specific calculation", 11f, muted))
+        header("Hindu Panchang", "Daily sunrise calendar · दैनिक पंचांग")
+        val date = LocalDate.now()
+        try {
+            val day = DrikPanchangService.forDate(date, city, java.time.ZoneId.of("Asia/Kolkata"))
+            card(label("SELECTED CITY · चुना हुआ शहर", 10f, gold, true),
+                label(city, 20f, ivory, true),
+                label(date.format(DateTimeFormatter.ofPattern("EEEE, dd MMMM yyyy", Locale.ENGLISH)), 12f, muted))
+            card(label("TITHI AT LOCAL SUNRISE · सूर्योदय की तिथि", 10f, gold, true),
+                label(day.tithiDisplay, 21f, ivory, true),
+                label(day.pakshaHindi, 13f, gold),
+                label("Lunar month system: Purnimant · Sunrise convention: Upper limb", 11f, muted))
+            card(label("SUNRISE & SUNSET · सूर्योदय और सूर्यास्त", 10f, gold, true),
+                label("Sunrise / सूर्योदय     " + day.sunriseLocal, 16f, ivory, true),
+                label("Sunset / सूर्यास्त       " + day.sunsetLocal, 16f, ivory, true))
+            card(label("CALCULATION DETAILS", 10f, gold, true),
+                label("Engine: tithi-engine 5.0.0 · City registry: " + day.canonicalCity, 11f, ivory),
+                label("Timezone: Asia/Kolkata · Result is the sunrise-anchored tithi for the selected civil date.", 11f, muted),
+                label("Nakshatra, Yoga, Karana, Vara, Rahu Kaal and festival observance are not yet connected.", 12f, gold))
+        } catch (e: Exception) {
+            card(label("CITY NOT SUPPORTED BY THE VERIFIED ENGINE", 12f, gold, true),
+                label("Selected city: " + city, 15f, ivory, true),
+                label("Choose a supported city name (for example Bhopal, Pune, Delhi, Mumbai or Ujjain). The app will not silently substitute another city.", 12f, muted))
+            content.addView(button("Choose supported city") { chooseCity() })
         }
-        content.addView(button("Open IMD Rashtriya Panchang / आधिकारिक पंचांग") {
+        content.addView(button("Open IMD Rashtriya Panchang / आधिकारिक पंचांग", false) {
             openUrl("https://mausam.imd.gov.in/responsive/rashtriyPanchang.php")
-        }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) })
-        content.addView(label("IMD Rashtriya Panchang publishes national calendar and astronomical data. Local observance may vary by region and tradition.", 12f, muted))
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8); bottomMargin = dp(10) })
     }
-
     private fun profile() {
         header("Birth Profile", "Private on-device profile · जन्म विवरण")
         content.addView(label("Kundli needs DOB, exact local birth time, birthplace, coordinates and timezone. Approximate birth time must be flagged.", 13f, ivory))

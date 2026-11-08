@@ -24,8 +24,15 @@ See ARCHITECTURE.md for module boundaries, conventions and release gates.
 - Domain foundation for 16 Vastu direction sectors.
 - Numerology arithmetic for Mulank, Bhagyank and optional Chaldean name number.
 - Birth profile validation.
-- Panchang and Vedic chart provider contracts; a validated/licensed calculation engine is not configured yet.
+- Sunrise-anchored Tithi, lunar month and sunrise/sunset for registered cities using tithi-engine 5.0.0 (Apache-2.0). Other Panchang limbs, festival rules and Vedic chart calculations are not yet connected.
 - Local language and city preference storage.
+
+## Calculation engine and attribution
+- Panchang dependency: `io.github.misrilibrary:tithi-engine:5.0.0` (Apache License 2.0).
+- Tithi is evaluated at local sunrise using Purnimant month assignment and the upper-limb sunrise convention.
+- City names are strictly resolved; unknown cities are rejected rather than silently replaced.
+- This dependency calculates Tithi/lunar month and solar times only. It does not provide Nakshatra, Yoga, Karana, festival observance, Muhurat or Janma Kundli.
+- Upstream source and accuracy methodology: https://github.com/misrilibrary/tithi-engine
 
 ## Build and test
 GitHub Actions builds a debug APK on pushes to main and manual workflow dispatch. Open Actions → Build Surwi Compass APK → latest run → Artifacts → surwi-compass-debug-apk.
