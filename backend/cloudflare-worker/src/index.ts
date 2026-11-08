@@ -21,7 +21,7 @@ function b64url(value: string): Uint8Array {
   const raw = atob(normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "="));
   return Uint8Array.from(raw, c => c.charCodeAt(0));
 }
-async function verifyJwt(token: string, secret: string): Promise<boolean> {
+async function verifyJwt(token: string, secret: string, issuer: string, audience: string): Promise<boolean> {
   try {
     const parts = token.split(".");
     if (parts.length !== 3) return false;
@@ -43,7 +43,7 @@ export default {
     if (!env.TANTRAKULAM_API_KEY || !env.JWT_HS256_SECRET || !env.JWT_ISSUER || !env.JWT_AUDIENCE) return json({ error: "Commercial gateway is not configured" }, 503);
     const auth = request.headers.get("authorization") || "";
     const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
-    if (!(await verifyJwt(token, env.JWT_HS256_SECRET))) return json({ error: "Unauthorised" }, 401);
+    if (!(await verifyJwt(token, env.JWT_HS256_SECRET, env.JWT_ISSUER, env.JWT_AUDIENCE))) return json({ error: "Unauthorised" }, 401);
 
     let input: Record<string, unknown>;
     try { input = await request.json() as Record<string, unknown>; }
