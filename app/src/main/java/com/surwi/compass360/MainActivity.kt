@@ -10,10 +10,11 @@ import android.view.Surface
 import android.view.WindowManager
 import android.widget.TextView
 import java.util.Locale
-import kotlin.math.roundToInt
+import kotlin.math.*
 
 class MainActivity : Activity(), SensorEventListener {
-    private lateinit var sensorManager: SensorManager
+    private lateinit var sm: SensorManager
+    private var rotationVector: Sensor? = null
     private var accelerometer: Sensor? = null
     private var magnetometer: Sensor? = null
     private lateinit var directionText: TextView
@@ -22,12 +23,14 @@ class MainActivity : Activity(), SensorEventListener {
     private lateinit var accuracyText: TextView
     private lateinit var statusText: TextView
     private lateinit var compassView: CompassView
+
     private val gravity = FloatArray(3)
     private val magnetic = FloatArray(3)
     private var hasGravity = false
     private var hasMagnetic = false
     private var magneticAccuracy = SensorManager.SENSOR_STATUS_UNRELIABLE
-    private var lastHeading = 0f
+    private var filteredHeading: Double? = null
+    private var lastUiUpdate = 0L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,35 +42,42 @@ class MainActivity : Activity(), SensorEventListener {
         accuracyText = findViewById(R.id.accuracyValue)
         statusText = findViewById(R.id.sensorStatus)
         compassView = findViewById(R.id.compassView)
-        sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
-        accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
-        magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
-        val missing = mutableListOf<String>()
-        if (accelerometer == null) missing.add("accelerometer")
-        if (magnetometer == null) missing.add("magnetometer")
-        if (missing.isNotEmpty()) {
-            statusText.text = "Required sensor unavailable: ${missing.joinToString()}"
+        sm = getSystemService(SENSOR_SERVICE) as SensorManager
+        rotationVector = sm.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
+        accelerometer = sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+        magnetometer = sm.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
+        if (rotationVector == null && (accelerometer == null || magnetometer == null)) {
+            statusText.text = "Compass sensor unavailable on this device"
             accuracyText.text = "Unavailable"
         } else {
-            statusText.text = "Sensors detected · Waiting for readings"
+            statusText.text = if (rotationVector != null) "Sensor fusion ready" else "Fallback sensors ready"
         }
     }
 
     override fun onResume() {
         super.onResume()
-        accelerometer?.let { sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME) }
-        magnetometer?.let { sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME) }
+        rotationVector?.let { sm.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME) }
+        if (rotationVector == null) {
+            accelerometer?.let { sm.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME) }
+            magnetometer?.let { sm.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME) }
+        }
     }
 
     override fun onPause() {
         super.onPause()
-        sensorManager.unregisterListener(this)
+        sm.unregisterListener(this)
     }
 
     override fun onSensorChanged(event: SensorEvent) {
+        if (event.sensor.type == Sensor.TYPE_ROTATION_VECTOR) {
+            val matrix = FloatArray(9)
+            SensorManager.getRotationMatrixFromVector(matrix, event.values)
+            publishMatrix(matrix)
+            return
+        }
         when (event.sensor.type) {
             Sensor.TYPE_ACCELEROMETER -> {
-                for (i in 0..2) gravity[i] = gravity[i] * 0.8f + event.values[i] * 0.2f
+                for (i in 0..2) gravity[i] = gravity[i] * 0.82f + event.values[i] * 0.18f
                 hasGravity = true
             }
             Sensor.TYPE_MAGNETIC_FIELD -> {
@@ -76,12 +86,12 @@ class MainActivity : Activity(), SensorEventListener {
             }
         }
         if (!hasGravity || !hasMagnetic) return
-        val rotation = FloatArray(9)
+        val matrix = FloatArray(9)
         val inclination = FloatArray(9)
-        if (!SensorManager.getRotationMatrix(rotation, inclination, gravity, magnetic)) {
-            statusText.text = "Unable to calculate heading · Check magnetic interference"
-            return
-        }
+        if (SensorManager.getRotationMatrix(matrix, inclination, gravity, magnetic)) publishMatrix(matrix)
+    }
+
+    private fun publishMatrix(matrix: FloatArray) {
         val remapped = FloatArray(9)
         val axes = when (windowManager.defaultDisplay.rotation) {
             Surface.ROTATION_90 -> SensorManager.AXIS_Y to SensorManager.AXIS_MINUS_X
@@ -89,42 +99,44 @@ class MainActivity : Activity(), SensorEventListener {
             Surface.ROTATION_270 -> SensorManager.AXIS_MINUS_Y to SensorManager.AXIS_X
             else -> SensorManager.AXIS_X to SensorManager.AXIS_Y
         }
-        if (!SensorManager.remapCoordinateSystem(rotation, axes.first, axes.second, remapped)) return
+        if (!SensorManager.remapCoordinateSystem(matrix, axes.first, axes.second, remapped)) return
         val orientation = FloatArray(3)
         SensorManager.getOrientation(remapped, orientation)
-        var azimuth = Math.toDegrees(orientation[0].toDouble()).toFloat()
-        azimuth = (azimuth + 360f) % 360f
-        val delta = ((azimuth - lastHeading + 540f) % 360f) - 180f
-        lastHeading = (lastHeading + delta * 0.22f + 360f) % 360f
-        renderHeading(lastHeading)
+        val raw = (Math.toDegrees(orientation[0].toDouble()) + 360.0) % 360.0
+        val previous = filteredHeading
+        // Circular low-pass filter: correct across the 359°/0° boundary.
+        filteredHeading = if (previous == null) raw else {
+            val delta = ((raw - previous + 540.0) % 360.0) - 180.0
+            (previous + delta * 0.12 + 360.0) % 360.0
+        }
+        val now = System.currentTimeMillis()
+        if (now - lastUiUpdate >= 50L) {
+            lastUiUpdate = now
+            renderHeading(filteredHeading!!)
+        }
     }
 
-    private fun renderHeading(heading: Float) {
-        val rounded = heading.roundToInt() % 360
-        val directions = arrayOf("N", "NE", "E", "SE", "S", "SW", "W", "NW")
-        val label = directions[((rounded + 22) / 45) % 8]
+    private fun renderHeading(heading: Double) {
+        val rounded = Math.round(heading).toInt() % 360
+        val dirs = arrayOf("N", "NE", "E", "SE", "S", "SW", "W", "NW")
+        val label = dirs[((rounded + 22) / 45) % 8]
         directionText.text = label
-        degreesText.text = String.format(Locale.getDefault(), "%.1f°", heading)
+        degreesText.text = String.format(Locale.getDefault(), "%03d°", rounded)
         headingText.text = String.format(Locale.getDefault(), "%.1f°", heading)
-        compassView.setHeading(heading)
+        compassView.setHeading(heading.toFloat())
         accuracyText.text = when (magneticAccuracy) {
             SensorManager.SENSOR_STATUS_ACCURACY_HIGH -> "High"
             SensorManager.SENSOR_STATUS_ACCURACY_MEDIUM -> "Medium"
             SensorManager.SENSOR_STATUS_ACCURACY_LOW -> "Low"
-            else -> "Unreliable"
+            else -> "Calibrating"
         }
-        statusText.text = "Live · Accelerometer + magnetometer"
+        statusText.text = if (magneticAccuracy == SensorManager.SENSOR_STATUS_UNRELIABLE)
+            "Live · Keep away from magnets and metal" else "Live · Magnetic north"
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
-        if (sensor?.type == Sensor.TYPE_MAGNETIC_FIELD) {
+        if (sensor?.type == Sensor.TYPE_MAGNETIC_FIELD || sensor?.type == Sensor.TYPE_ROTATION_VECTOR) {
             magneticAccuracy = accuracy
-            accuracyText.text = when (accuracy) {
-                SensorManager.SENSOR_STATUS_ACCURACY_HIGH -> "High"
-                SensorManager.SENSOR_STATUS_ACCURACY_MEDIUM -> "Medium"
-                SensorManager.SENSOR_STATUS_ACCURACY_LOW -> "Low"
-                else -> "Unreliable"
-            }
         }
     }
 }
