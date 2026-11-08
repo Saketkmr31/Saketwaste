@@ -222,6 +222,17 @@ class MainActivity : Activity(), SensorEventListener {
         feature("Numerology", "Mulank · Bhagyank · name number", "№", "numerology")
         feature("Muhurat", "Traditional timing calculations", "◷", "muhurat", false)
         feature("Hindu festivals", "Regional calendar & observances", "❀", "festivals", false)
+        val savedProfile = BirthProfileStore(this).load()
+        if (savedProfile != null) {
+            card(label("YOUR SAVED BIRTH PROFILE", 10f, gold, true),
+                label(savedProfile.getOrNull(0).orEmpty(), 17f, ivory, true),
+                label("DOB: " + savedProfile.getOrNull(1).orEmpty() + " · " + savedProfile.getOrNull(3).orEmpty(), 12f, muted),
+                button("Open my Kundli inputs", false) { go("kundli") })
+        } else {
+            card(label("PERSONALISE YOUR EXPERIENCE", 10f, gold, true),
+                label("Save your birth details once. Your DOB and name can then prefill Numerology; birth-place details are shown in your Kundli workspace.", 12f, ivory),
+                button("Create birth profile", false) { go("profile") })
+        }
         card(label("OFFLINE-FIRST", 11f, gold, true),
             label("Compass, Vastu reference and numerology work on-device. Panchang and Kundli values stay unavailable until a validated astronomy engine is connected.", 12f, ivory))
     }
@@ -347,8 +358,9 @@ class MainActivity : Activity(), SensorEventListener {
     private fun numerology() {
         header("Numerology", "Mulank · Bhagyank · Name number")
         content.addView(label("Enter DOB as YYYY-MM-DD. Name number uses a Chaldean letter-value table. The arithmetic convention is shown with the result.", 13f, muted))
-        val fullName = field("Full name (optional)")
-        val dob = field("DOB · YYYY-MM-DD, e.g. 1998-07-31")
+        val savedProfile = BirthProfileStore(this).load()
+        val fullName = field("Full name (optional)", savedProfile?.getOrNull(0) ?: "")
+        val dob = field("DOB · YYYY-MM-DD, e.g. 1998-07-31", savedProfile?.getOrNull(1) ?: "")
         content.addView(fullName, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
         content.addView(dob, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
         val result = label("Your result will appear here.", 14f, ivory)
@@ -374,14 +386,40 @@ class MainActivity : Activity(), SensorEventListener {
 
     private fun kundli() {
         header("Janma Kundli", "Vedic birth chart · जन्म कुंडली")
+        val saved = BirthProfileStore(this).load()
+        if (saved == null) {
+            card(label("BIRTH PROFILE NOT SET UP", 11f, gold, true),
+                label("Create your profile once. Your saved DOB, birth city, optional birth time and optional coordinates will appear here automatically.", 13f, ivory),
+                button("Set up birth profile") { go("profile") })
+        } else {
+            val time = saved.getOrNull(2).orEmpty()
+            val lat = saved.getOrNull(4).orEmpty()
+            val lon = saved.getOrNull(5).orEmpty()
+            val zone = saved.getOrNull(6).orEmpty().ifBlank { "Asia/Kolkata" }
+            val completeness = when {
+                time.isNotBlank() && lat.isNotBlank() && lon.isNotBlank() -> "INPUTS COMPLETE · supplied birth time and coordinates"
+                time.isBlank() && lat.isBlank() -> "APPROXIMATE INPUTS · birth time and coordinates not supplied"
+                time.isBlank() -> "APPROXIMATE TIME · birth time not supplied"
+                else -> "APPROXIMATE LOCATION · coordinates not supplied"
+            }
+            card(label("YOUR SAVED BIRTH DETAILS", 11f, gold, true),
+                label(saved.getOrNull(0).orEmpty(), 18f, ivory, true),
+                label("Date of birth: " + saved.getOrNull(1).orEmpty(), 13f, ivory),
+                label("Birth place: " + saved.getOrNull(3).orEmpty(), 13f, ivory),
+                label("Birth time: " + if (time.isBlank()) "Not provided" else time, 13f, ivory),
+                label("Coordinates: " + if (lat.isNotBlank()) "$lat, $lon" else "Not provided", 13f, ivory),
+                label("Timezone: " + zone, 13f, ivory),
+                label(completeness, 11f, gold),
+                button("Edit birth profile") { go("profile") })
+        }
         card(label("ASTRONOMY ENGINE NOT CONNECTED", 11f, gold, true),
-            label("No guessed Rashi, Lagna or Nakshatra. A validated ephemeris, timezone handling and declared ayanamsha are required.", 13f, ivory))
-        section("TARGET CHART")
+            label("Your saved profile is now connected to this screen, but a Kundli is not yet being calculated. This build does not contain a validated planetary ephemeris, place-to-coordinate resolver or Lahiri sidereal calculation. We will not invent your Rashi, Lagna, Nakshatra, houses or Dasha.", 13f, ivory))
+        section("CHART MODULES TO ENABLE")
         listOf("Janma Rashi / Moon sign", "Lagna / Ascendant", "27 Nakshatras and Pada", "Navagraha longitudes", "12 Bhava / houses", "Navamsha and divisional charts", "Vimshottari Dasha and Antardasha", "Ashtakoota compatibility").forEach {
             content.addView(label("• " + it, 13f, ivory))
         }
-        content.addView(label("Proposed default: sidereal zodiac with Lahiri ayanamsha. Every result must show engine, version, location, timezone and calculation time. Exact Lagna needs reliable birth time.", 12f, muted))
-        content.addView(button("Set up birth profile") { go("profile") })
+        content.addView(label("Planned default: sidereal zodiac with Lahiri ayanamsha. A saved profile does not itself calculate a horoscope; every result must be generated by a validated ephemeris and disclose precision, location, timezone and method.", 12f, muted))
+        if (saved == null) content.addView(button("Set up birth profile") { go("profile") })
     }
 
     private fun muhurat() {
