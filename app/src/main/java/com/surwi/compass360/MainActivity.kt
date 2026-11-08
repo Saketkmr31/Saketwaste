@@ -53,6 +53,9 @@ class MainActivity : Activity(), SensorEventListener {
     private var headingLabel = "N"
     private var screen = "home"
     private var city = "Bhopal"
+    private var selectedPanchangDate: LocalDate = LocalDate.now()
+    private var selectedVastuRoom: String = "Prayer / पूजा कक्ष"
+    private var selectedMuhuratEvent: String = "Griha Pravesh / गृह प्रवेश"
     private var headingView: TextView? = null
     private var liveView: TextView? = null
     private var accuracyView: TextView? = null
@@ -259,24 +262,56 @@ class MainActivity : Activity(), SensorEventListener {
         val d = VastuDirectionCatalog.atBearing(bearing)
         card(label("CURRENT PHONE BEARING", 10f, gold, true),
             label(d.code + " · " + d.english + " · " + d.hindi, 18f, ivory, true),
-            label(d.generalNote, 12f, muted))
+            label(d.generalNote, 12f, muted),
+            label("Magnetic compass reading only. Calibrate the phone; a phone compass is not a building survey.", 11f, muted))
+        section("ROOM PLACEMENT GUIDE · कक्ष दिशा मार्गदर्शिका")
+        val rooms = listOf("Prayer / पूजा कक्ष", "Kitchen / रसोई", "Master bedroom / मुख्य शयनकक्ष", "Living room / बैठक", "Study / अध्ययन", "Guest room / अतिथि कक्ष", "Dining / भोजन कक्ष", "Storage / भंडारण", "Main entrance / मुख्य द्वार")
+        val advice = mapOf(
+            rooms[0] to ("NE · ईशान" to "Common modern guidance prefers north-east for prayer or meditation."),
+            rooms[1] to ("SE · आग्नेय" to "Common modern guidance associates south-east with Agni and kitchen activity. Fire safety and ventilation come first."),
+            rooms[2] to ("SW · नैऋत्य" to "Many contemporary schools associate south-west with stability and the main bedroom."),
+            rooms[3] to ("N / E · उत्तर / पूर्व" to "North or east are commonly suggested for shared living spaces."),
+            rooms[4] to ("E / NE · पूर्व / ईशान" to "East or north-east are common suggestions for study and focused work."),
+            rooms[5] to ("NW · वायव्य" to "North-west is commonly associated with guest rooms in modern Vastu."),
+            rooms[6] to ("W / NW · पश्चिम / वायव्य" to "West or north-west are used in some modern dining-room recommendations."),
+            rooms[7] to ("S / W · दक्षिण / पश्चिम" to "South or west are sometimes suggested for heavier storage. Check floor and shelf load limits."),
+            rooms[8] to ("Plot-specific" to "Entrance recommendations vary by school, plot geometry and road orientation; compass direction alone is insufficient.")
+        )
+        content.addView(button("Choose room · " + selectedVastuRoom, false) {
+            android.app.AlertDialog.Builder(this).setTitle("Select room / कक्ष चुनें")
+                .setItems(rooms.toTypedArray()) { _, which -> selectedVastuRoom = rooms[which]; render() }.show()
+        }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
+        val selectedAdvice = advice[selectedVastuRoom]!!
+        card(label("TRADITIONAL DIRECTION", 10f, gold, true),
+            label(selectedAdvice.first, 21f, ivory, true),
+            label(selectedAdvice.second, 13f, ivory),
+            label("Practical safety, accessibility, ventilation, daylight and building codes override generic Vastu suggestions.", 12f, muted))
         section("16 DIRECTIONS")
         VastuDirectionCatalog.directions.forEach { direction ->
             card(label(direction.code + " · " + direction.english + " / " + direction.hindi, 14f, gold, true),
                 label(direction.traditionalAssociation, 12f, ivory),
                 label(direction.generalNote, 12f, muted))
         }
-        content.addView(label("These are common Vastu associations. Schools and classical source texts differ; this is not an architectural or structural safety assessment.", 12f, muted))
+        content.addView(label("Common modern Vastu associations are shown for education. Schools and classical sources differ. This is not an architectural, structural, fire or electrical assessment. Never demolish or modify a building based only on this screen.", 12f, muted))
     }
 
     private fun panchang() {
         header("Hindu Panchang", "Daily sunrise calendar · दैनिक पंचांग")
-        val date = LocalDate.now()
+        card(label("SELECTED CITY · चुना हुआ शहर", 10f, gold, true),
+            label(city, 20f, ivory, true),
+            label("Selected date: " + selectedPanchangDate.format(DateTimeFormatter.ofPattern("EEEE, dd MMMM yyyy", Locale.ENGLISH)), 12f, muted),
+            button("Change date / तारीख चुनें", false) {
+                android.app.DatePickerDialog(this, { _, year, month, day ->
+                    selectedPanchangDate = LocalDate.of(year, month + 1, day)
+                    render()
+                }, selectedPanchangDate.year, selectedPanchangDate.monthValue - 1, selectedPanchangDate.dayOfMonth).show()
+            })
+        val dateNav = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER }
+        dateNav.addView(button("← Previous day", false) { selectedPanchangDate = selectedPanchangDate.minusDays(1); render() }, LinearLayout.LayoutParams(0, -2, 1f))
+        dateNav.addView(button("Next day →", false) { selectedPanchangDate = selectedPanchangDate.plusDays(1); render() }, LinearLayout.LayoutParams(0, -2, 1f))
+        content.addView(dateNav, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) })
         try {
-            val day = DrikPanchangService.forDate(date, city, java.time.ZoneId.of("Asia/Kolkata"))
-            card(label("SELECTED CITY · चुना हुआ शहर", 10f, gold, true),
-                label(city, 20f, ivory, true),
-                label(date.format(DateTimeFormatter.ofPattern("EEEE, dd MMMM yyyy", Locale.ENGLISH)), 12f, muted))
+            val day = DrikPanchangService.forDate(selectedPanchangDate, city, java.time.ZoneId.of("Asia/Kolkata"))
             card(label("TITHI AT LOCAL SUNRISE · सूर्योदय की तिथि", 10f, gold, true),
                 label(day.tithiDisplay, 21f, ivory, true),
                 label(day.pakshaHindi, 13f, gold),
@@ -284,20 +319,24 @@ class MainActivity : Activity(), SensorEventListener {
             card(label("SUNRISE & SUNSET · सूर्योदय और सूर्यास्त", 10f, gold, true),
                 label("Sunrise / सूर्योदय     " + day.sunriseLocal, 16f, ivory, true),
                 label("Sunset / सूर्यास्त       " + day.sunsetLocal, 16f, ivory, true))
+            card(label("VARA · WEEKDAY", 10f, gold, true),
+                label(selectedPanchangDate.dayOfWeek.getDisplayName(java.time.format.TextStyle.FULL, Locale.ENGLISH), 17f, ivory, true),
+                label(selectedPanchangDate.dayOfWeek.getDisplayName(java.time.format.TextStyle.FULL, Locale.forLanguageTag("hi-IN")), 13f, muted))
             card(label("CALCULATION DETAILS", 10f, gold, true),
                 label("Engine: tithi-engine 5.0.0 · City registry: " + day.canonicalCity, 11f, ivory),
-                label("Timezone: Asia/Kolkata · Result is the sunrise-anchored tithi for the selected civil date.", 11f, muted),
-                label("Nakshatra, Yoga, Karana, Vara, Rahu Kaal and festival observance are not yet connected.", 12f, gold))
+                label("Timezone: Asia/Kolkata · Sunrise-anchored tithi for selected civil date.", 11f, muted),
+                label("Nakshatra, Yoga, Karana, Rahu Kaal and exact tithi ending time are not yet calculated in this app.", 12f, gold))
         } catch (e: Exception) {
             card(label("CITY NOT SUPPORTED BY THE VERIFIED ENGINE", 12f, gold, true),
                 label("Selected city: " + city, 15f, ivory, true),
-                label("Choose a supported city name (for example Bhopal, Pune, Delhi, Mumbai or Ujjain). The app will not silently substitute another city.", 12f, muted))
+                label("Choose a supported city name. The app will not silently substitute another location.", 12f, muted))
             content.addView(button("Choose supported city") { chooseCity() })
         }
         content.addView(button("Open IMD Rashtriya Panchang / आधिकारिक पंचांग", false) {
-            openUrl("https://mausam.imd.gov.in/responsive/rashtriyPanchang.php")
+            openUrl("https://packolkata.imd.gov.in/panchang/en")
         }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8); bottomMargin = dp(10) })
     }
+
     private fun profile() {
         header("Birth Profile", "Private on-device profile · जन्म विवरण")
         content.addView(label("Enter your date of birth and birth city. Birth time and latitude/longitude are OPTIONAL. If unknown, leave them blank: a city-based approximate location can be used and the chart must be marked approximate. Exact time and coordinates improve accuracy.", 13f, ivory))
@@ -423,24 +462,67 @@ class MainActivity : Activity(), SensorEventListener {
     }
 
     private fun muhurat() {
-        header("Muhurat", "Traditional timing guidance · मुहूर्त")
-        content.addView(label("Muhurta depends on event, time range, location, sunrise, Panchang elements and the selected tradition. No universal auspicious time is assumed.", 13f, muted))
-        listOf("Griha Pravesh / गृह प्रवेश", "Vivah / विवाह", "Vehicle purchase / वाहन", "Property registration / संपत्ति", "Travel / यात्रा", "Business start / नया कार्य").forEach {
-            card(label(it, 15f, ivory, true))
-        }
-        card(label("NOT YET LIVE", 11f, gold, true), label("The calculation engine and tradition-specific rule set are not configured. This screen will not fabricate Muhurat windows.", 13f, ivory))
-        content.addView(button("Open official IMD Panchang") { openUrl("https://mausam.imd.gov.in/responsive/rashtriyPanchang.php") })
+        header("Muhurat Planner", "Event planning workspace · मुहूर्त योजना")
+        content.addView(label("Choose an event and prepare details for a tradition-specific Muhurta review. This version does not rank auspicious time windows; that requires all five Panchang limbs, local sunrise and a declared rule set.", 13f, muted))
+        val events = listOf("Griha Pravesh / गृह प्रवेश", "Vivah / विवाह", "Vehicle purchase / वाहन", "Property registration / संपत्ति", "Travel / यात्रा", "Business start / नया कार्य")
+        content.addView(button("Event: " + selectedMuhuratEvent, false) {
+            android.app.AlertDialog.Builder(this).setTitle("Choose event")
+                .setItems(events.toTypedArray()) { _, which -> selectedMuhuratEvent = events[which]; render() }.show()
+        }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
+        val targetDate = field("Preferred date · YYYY-MM-DD", selectedPanchangDate.toString())
+        val eventCity = field("City / शहर", city)
+        val tradition = field("Tradition (e.g. Smarta / Vaishnava / regional)", "General")
+        listOf(targetDate, eventCity, tradition).forEach { content.addView(it, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) }) }
+        card(label("REQUEST SUMMARY", 10f, gold, true),
+            label(selectedMuhuratEvent, 16f, ivory, true),
+            label("A full recommendation must validate tithi, nakshatra, yoga, karana, weekday, local sunrise/sunset, Rahu Kaal and event-specific tradition rules.", 12f, muted))
+        content.addView(button("Save planning details") {
+            try {
+                val date = LocalDate.parse(targetDate.text.toString().trim())
+                getSharedPreferences("muhurat_requests", MODE_PRIVATE).edit()
+                    .putString("date", date.toString()).putString("city", eventCity.text.toString().trim())
+                    .putString("event", selectedMuhuratEvent).putString("tradition", tradition.text.toString().trim()).apply()
+                Toast.makeText(this, "Planning details saved on this device. No auspicious time has been calculated.", Toast.LENGTH_LONG).show()
+            } catch (_: Exception) { Toast.makeText(this, "Enter date as YYYY-MM-DD.", Toast.LENGTH_SHORT).show() }
+        })
+        card(label("ENGINE STATUS", 10f, gold, true),
+            label("Muhurat calculation is not yet connected. No auspicious or inauspicious time is fabricated.", 13f, ivory))
+        content.addView(button("Check official IMD Panchang") { openUrl("https://packolkata.imd.gov.in/panchang/en") })
     }
 
     private fun festivals() {
-        header("Hindu Festivals", "Regional calendar · हिन्दू त्योहार")
-        content.addView(label("Festival dates and observance windows vary by region, sunrise convention and tradition. This build lists observance categories but does not invent dates.", 13f, muted))
-        listOf("Ekadashi / एकादशी", "Purnima / पूर्णिमा", "Amavasya / अमावस्या", "Sankashti Chaturthi / संकष्टी", "Pradosh Vrat / प्रदोष", "Navratri / नवरात्रि", "Diwali / दीपावली", "Holi / होली", "Makar Sankranti / मकर संक्रांति", "Janmashtami / जन्माष्टमी", "Ganesh Chaturthi / गणेश चतुर्थी", "Regional temple festivals").forEach {
-            card(label(it, 14f, ivory, true))
+        header("Tithi & Vrat Calendar", "Tithi-based observance finder · तिथि व्रत कैलेंडर")
+        content.addView(label("Find sunrise tithi matches for common observance categories. These are tithi matches, not final regional festival declarations. Smarta, Vaishnava and regional rules may assign different dates.", 13f, muted))
+        try {
+            val matches = mutableListOf<Pair<LocalDate, String>>()
+            for (offset in 0..120) {
+                val date = LocalDate.now().plusDays(offset.toLong())
+                val info = DrikPanchangService.forDate(date, city, java.time.ZoneId.of("Asia/Kolkata"))
+                val t = info.tithiDisplay.lowercase(Locale.ROOT)
+                val category = when {
+                    "ekadashi" in t -> "Ekadashi / एकादशी"
+                    "purnima" in t -> "Purnima / पूर्णिमा"
+                    "amavasya" in t -> "Amavasya / अमावस्या"
+                    "chaturthi" in t -> "Chaturthi / चतुर्थी"
+                    "trayodashi" in t -> "Trayodashi / त्रयोदशी"
+                    "ashtami" in t -> "Ashtami / अष्टमी"
+                    "navami" in t -> "Navami / नवमी"
+                    else -> null
+                }
+                if (category != null) matches.add(date to (category + " · " + info.tithiDisplay))
+            }
+            matches.forEach { (date, description) ->
+                card(label(date.format(DateTimeFormatter.ofPattern("EEE, dd MMM yyyy", Locale.ENGLISH)), 12f, gold, true),
+                    label(description, 15f, ivory, true))
+            }
+            card(label("METHOD & LIMITATION", 10f, gold, true),
+                label("Engine: tithi-engine 5.0.0 · sunrise tithi · Purnimant month · upper-limb sunrise convention · city: " + city, 11f, ivory),
+                label("This is a tithi observance aid, not a verified festival-date engine. Verify festival dates, fasting rules and puja Muhurta with the relevant regional Panchang and sampradaya.", 12f, muted))
+        } catch (e: Exception) {
+            card(label("CITY NOT SUPPORTED", 12f, gold, true), label(e.message ?: "Choose a supported city.", 12f, ivory))
+            content.addView(button("Choose city") { chooseCity() })
         }
-        card(label("DATE ENGINE NOT CONNECTED", 11f, gold, true),
-            label("Dates will appear only after local calculation and regional observance verification. Source and last-updated time will be visible.", 13f, ivory))
-        content.addView(button("Open IMD Rashtriya Panchang") { openUrl("https://mausam.imd.gov.in/responsive/rashtriyPanchang.php") })
+        content.addView(button("Verify with IMD Rashtriya Panchang") { openUrl("https://packolkata.imd.gov.in/panchang/en") })
     }
 
     private fun settings() {
