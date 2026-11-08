@@ -33,6 +33,6 @@ object DrikPanchangService {
         } else {
             "कृष्ण पक्ष · Krishna Paksha"
         }
-        return DailyTithi(city.name, info.displayName, paksha, sunrise, sunset)
+        return DailyTithi(city.name(), info.displayName, paksha, sunrise, sunset)
     }
 }
