@@ -1,6 +1,6 @@
 <resources>
-    <string name="app_name">Surwi</string>
-    <string name="brand_tagline">VEDIC COMPASS • VASTU • PANCHANG</string>
+    <string name="app_name">Vedic Compass 360</string>
+    <string name="brand_tagline">Vastu • Jyotish • Panchang</string>
     <string name="language_english">English</string>
     <string name="language_hindi">हिन्दी</string>
     <string name="compass">Compass 360</string>

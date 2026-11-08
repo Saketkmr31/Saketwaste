@@ -1,6 +1,6 @@
 <resources>
-    <string name="app_name">Surwi</string>
-    <string name="brand_tagline">वैदिक कम्पास • वास्तु • पंचांग</string>
+    <string name="app_name">वैदिक कम्पास 360</string>
+    <string name="brand_tagline">वास्तु • ज्योतिष • पंचांग</string>
     <string name="language_english">English</string>
     <string name="language_hindi">हिन्दी</string>
     <string name="compass">कम्पास 360</string>
