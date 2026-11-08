@@ -616,10 +616,37 @@ class MainActivity : Activity(), SensorEventListener {
     private fun openMapPicker(place: EditText, latitude: EditText, longitude: EditText) {
         val startLat = latitude.text.toString().toDoubleOrNull() ?: 23.2599
         val startLon = longitude.text.toString().toDoubleOrNull() ?: 77.4126
+
+        val dialog = android.app.Dialog(this)
+        val shell = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(16), dp(14), dp(16), dp(14))
+            setBackgroundColor(android.graphics.Color.rgb(31, 12, 8))
+        }
+        val heading = TextView(this).apply {
+            text = "Select exact place on map"
+            textSize = 20f
+            setTextColor(android.graphics.Color.rgb(255, 241, 212))
+            setPadding(dp(2), dp(4), dp(2), dp(10))
+        }
+        val hint = TextView(this).apply {
+            text = "Tap anywhere on the map to move the pin. Zoom in for a more precise location."
+            textSize = 13f
+            setTextColor(android.graphics.Color.rgb(232, 210, 174))
+            setPadding(dp(2), 0, dp(2), dp(10))
+        }
         val web = WebView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(-1, 0, 1f)
+            setBackgroundColor(android.graphics.Color.rgb(31, 12, 8))
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
-            webViewClient = WebViewClient()
+            settings.loadWithOverviewMode = false
+            settings.useWideViewPort = true
+            webViewClient = object : WebViewClient() {
+                override fun onPageFinished(view: WebView, url: String) {
+                    view.evaluateJavascript("if(window.map){setTimeout(()=>map.invalidateSize(true),250)}", null)
+                }
+            }
             addJavascriptInterface(object {
                 @JavascriptInterface fun picked(lat: Double, lon: Double) {
                     runOnUiThread {
@@ -633,28 +660,52 @@ class MainActivity : Activity(), SensorEventListener {
                             }
                         } catch (_: Exception) { }
                         Toast.makeText(this@MainActivity, "Map coordinates selected.", Toast.LENGTH_SHORT).show()
+                        dialog.dismiss()
                     }
                 }
             }, "AndroidPicker")
         }
-        val html = """
-            <!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">
-            <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-            <style>html,body,#map{height:100%;margin:0;background:#1f0c08} .hint{position:absolute;z-index:1000;top:10px;left:10px;right:10px;background:#391911;color:#fff1d4;padding:10px;border-radius:10px;font:14px sans-serif}</style>
-            <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script></head>
-            <body><div class="hint">Tap the exact birth location on the map, then press Use this location.</div><div id="map"></div>
-            <script>
-            const map=L.map('map').setView([$startLat,$startLon],12);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(map);
-            let marker=L.marker([$startLat,$startLon]).addTo(map);
-            map.on('click',e=>{marker.setLatLng(e.latlng);window.selected=e.latlng;});
-            window.selected=L.latLng($startLat,$startLon);
-            </script><button onclick="AndroidPicker.picked(window.selected.lat,window.selected.lng)" style="position:absolute;z-index:1001;bottom:18px;left:5%;width:90%;padding:15px;background:#ffcd70;border:0;border-radius:12px;font-weight:bold">Use this location</button></body></html>
-        """.trimIndent()
-        val dialog = android.app.AlertDialog.Builder(this).setTitle("Select exact place on map").setView(web)
-            .setNegativeButton("Cancel", null).create()
+        val choose = button("Use this location", true) {
+            web.evaluateJavascript(
+                "if(window.map && window.marker){AndroidPicker.picked(window.marker.getLatLng().lat,window.marker.getLatLng().lng)}",
+                null
+            )
+        }.apply {
+            layoutParams = LinearLayout.LayoutParams(-1, dp(50)).apply { topMargin = dp(12) }
+        }
+        val cancel = button("Cancel", false) { dialog.dismiss() }.apply {
+            layoutParams = LinearLayout.LayoutParams(-1, dp(44)).apply { topMargin = dp(4) }
+        }
+        shell.addView(heading)
+        shell.addView(hint)
+        shell.addView(web)
+        shell.addView(choose)
+        shell.addView(cancel)
+        dialog.setContentView(shell)
+        dialog.setOnDismissListener { web.destroy() }
         dialog.show()
-        dialog.window?.setLayout(-1, dp(560))
+        dialog.window?.setLayout(-1, dp(680))
+
+        val html = """
+            <!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+            <style>
+              *{box-sizing:border-box} html,body{height:100%;width:100%;margin:0;padding:0;overflow:hidden;background:#1f0c08}
+              #map{position:absolute;inset:0;width:100%;height:100%;background:#eadfc8}
+              .leaflet-container{font:13px sans-serif}
+              .leaflet-control-attribution{font-size:10px!important}
+            </style>
+            <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script></head>
+            <body><div id="map"></div><script>
+              window.map=L.map('map',{zoomControl:true}).setView([$startLat,$startLon],13);
+              L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+                maxZoom:19,attribution:'© OpenStreetMap contributors'
+              }).addTo(window.map);
+              window.marker=L.marker([$startLat,$startLon],{draggable:true}).addTo(window.map);
+              window.map.on('click',function(e){window.marker.setLatLng(e.latlng)});
+              setTimeout(function(){window.map.invalidateSize(true)},300);
+            </script></body></html>
+        """.trimIndent()
         web.loadDataWithBaseURL("https://www.openstreetmap.org", html, "text/html", "UTF-8", null)
     }
 
