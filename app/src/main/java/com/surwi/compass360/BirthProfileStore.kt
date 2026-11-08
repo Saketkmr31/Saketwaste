@@ -14,8 +14,8 @@ import javax.crypto.spec.GCMParameterSpec
 class BirthProfileStore(context: Context) {
     private val prefs = context.getSharedPreferences("private_birth_profile", Context.MODE_PRIVATE)
 
-    fun save(name: String, dob: String, time: String, place: String, zone: String) {
-        val plain = listOf(name, dob, time, place, zone).joinToString("\n")
+    fun save(name: String, dob: String, time: String, place: String, latitude: String, longitude: String, zone: String) {
+        val plain = listOf(name, dob, time, place, latitude, longitude, zone).joinToString("\n")
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
         cipher.init(Cipher.ENCRYPT_MODE, getOrCreateKey())
         val ciphertext = cipher.doFinal(plain.toByteArray(Charsets.UTF_8))
