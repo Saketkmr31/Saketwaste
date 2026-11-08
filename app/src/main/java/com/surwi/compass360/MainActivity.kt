@@ -325,7 +325,7 @@ class MainActivity : Activity(), SensorEventListener {
             card(label("CALCULATION DETAILS", 10f, gold, true),
                 label("Engine: tithi-engine 5.0.0 · City registry: " + day.canonicalCity, 11f, ivory),
                 label("Timezone: Asia/Kolkata · Sunrise-anchored tithi for selected civil date.", 11f, muted),
-                label("Nakshatra, Yoga, Karana, Rahu Kaal and exact tithi ending time are not yet calculated in this app.", 12f, gold))
+                label("This is the limited local Tithi engine. Full five-limb Panchang, exact transition times and Rahu Kaal will switch to the commercial provider only after its licensed gateway is activated.", 12f, gold))
         } catch (e: Exception) {
             card(label("CITY NOT SUPPORTED BY THE VERIFIED ENGINE", 12f, gold, true),
                 label("Selected city: " + city, 15f, ivory, true),
@@ -451,8 +451,8 @@ class MainActivity : Activity(), SensorEventListener {
                 label(completeness, 11f, gold),
                 button("Edit birth profile") { go("profile") })
         }
-        card(label("ASTRONOMY ENGINE NOT CONNECTED", 11f, gold, true),
-            label("Your saved profile is now connected to this screen, but a Kundli is not yet being calculated. This build does not contain a validated planetary ephemeris, place-to-coordinate resolver or Lahiri sidereal calculation. We will not invent your Rashi, Lagna, Nakshatra, houses or Dasha.", 13f, ivory))
+        card(label("COMMERCIAL ENGINE SELECTED · ACTIVATION PENDING", 11f, gold, true),
+            label("TantraGurukul / Tantrakulam Commercial API is the selected provider. The paid production key, authenticated gateway and privacy consent are not active yet, so this beta does not calculate a Kundli. We will not invent Rashi, Lagna, Nakshatra, houses or Dasha.", 13f, ivory))
         section("CHART MODULES TO ENABLE")
         listOf("Janma Rashi / Moon sign", "Lagna / Ascendant", "27 Nakshatras and Pada", "Navagraha longitudes", "12 Bhava / houses", "Navamsha and divisional charts", "Vimshottari Dasha and Antardasha", "Ashtakoota compatibility").forEach {
             content.addView(label("• " + it, 13f, ivory))
@@ -486,7 +486,7 @@ class MainActivity : Activity(), SensorEventListener {
             } catch (_: Exception) { Toast.makeText(this, "Enter date as YYYY-MM-DD.", Toast.LENGTH_SHORT).show() }
         })
         card(label("ENGINE STATUS", 10f, gold, true),
-            label("Muhurat calculation is not yet connected. No auspicious or inauspicious time is fabricated.", 13f, ivory))
+            label("Commercial provider selected; activation is pending. No auspicious or inauspicious time is fabricated until the paid engine, authenticated gateway and event-rule validation are live.", 13f, ivory))
         content.addView(button("Check official IMD Panchang") { openUrl("https://packolkata.imd.gov.in/panchang/en") })
     }
 
