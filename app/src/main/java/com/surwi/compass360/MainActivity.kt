@@ -7,8 +7,15 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Bundle
 import android.view.Surface
+import android.view.View
+import android.view.WindowInsets
 import android.view.WindowManager
+import android.widget.Button
+import android.widget.EditText
 import android.widget.TextView
+import android.widget.Toast
+import java.time.LocalDate
+import java.time.format.DateTimeParseException
 import java.util.Locale
 import kotlin.math.*
 
@@ -35,13 +42,32 @@ class MainActivity : Activity(), SensorEventListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        window.statusBarColor = android.graphics.Color.rgb(39, 16, 11)
+        window.navigationBarColor = android.graphics.Color.rgb(39, 16, 11)
         setContentView(R.layout.activity_main)
+
+        // Android 15+ enforces edge-to-edge for targetSdk 35. Add system-bar insets
+        // to the scroll container so the last card can scroll above the nav bar.
+        val scroll = findViewById<View>(R.id.mainScroll)
+        val baseLeft = scroll.paddingLeft
+        val baseTop = scroll.paddingTop
+        val baseRight = scroll.paddingRight
+        val baseBottom = scroll.paddingBottom
+        scroll.setOnApplyWindowInsetsListener { view, insets ->
+            val top = if (android.os.Build.VERSION.SDK_INT >= 30) insets.getInsets(WindowInsets.Type.statusBars()).top else insets.systemWindowInsetTop
+            val bottom = if (android.os.Build.VERSION.SDK_INT >= 30) insets.getInsets(WindowInsets.Type.navigationBars()).bottom else insets.systemWindowInsetBottom
+            view.setPadding(baseLeft, baseTop + top, baseRight, baseBottom + bottom + dp(24))
+            insets
+        }
+
         directionText = findViewById(R.id.direction)
         degreesText = findViewById(R.id.degrees)
         headingText = findViewById(R.id.headingValue)
         accuracyText = findViewById(R.id.accuracyValue)
         statusText = findViewById(R.id.sensorStatus)
         compassView = findViewById(R.id.compassView)
+        findViewById<Button>(R.id.calculateNumbers).setOnClickListener { calculateNumerology() }
+
         sm = getSystemService(SENSOR_SERVICE) as SensorManager
         rotationVector = sm.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
         accelerometer = sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
@@ -52,6 +78,33 @@ class MainActivity : Activity(), SensorEventListener {
         } else {
             statusText.text = if (rotationVector != null) "Sensor fusion ready" else "Fallback sensors ready"
         }
+    }
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).roundToInt()
+
+    private fun calculateNumerology() {
+        val input = findViewById<EditText>(R.id.dobInput).text.toString().trim()
+        val result = findViewById<TextView>(R.id.numerologyResult)
+        try {
+            val date = LocalDate.parse(input)
+            if (date.isAfter(LocalDate.now())) {
+                Toast.makeText(this, "Date of birth cannot be in the future.", Toast.LENGTH_SHORT).show()
+                return
+            }
+            val mulank = digitRoot(date.dayOfMonth)
+            val bhagyank = digitRoot(input.filter { it.isDigit() }.sumOf { it.digitToInt() })
+            result.text = "MULANK (Birth number): $mulank\nBHAGYANK (Destiny number): $bhagyank\n\nMethod: day of month and all digits of YYYY-MM-DD reduced to 1–9. Master numbers are reduced in this basic calculator. Interpretations are traditional numerology, not scientific facts."
+        } catch (_: DateTimeParseException) {
+            Toast.makeText(this, "Please enter date as YYYY-MM-DD.", Toast.LENGTH_SHORT).show()
+        } catch (_: Exception) {
+            Toast.makeText(this, "Please check the date and try again.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun digitRoot(number: Int): Int {
+        var n = number
+        while (n > 9) n = n.toString().sumOf { it.digitToInt() }
+        return n
     }
 
     override fun onResume() {
@@ -104,7 +157,6 @@ class MainActivity : Activity(), SensorEventListener {
         SensorManager.getOrientation(remapped, orientation)
         val raw = (Math.toDegrees(orientation[0].toDouble()) + 360.0) % 360.0
         val previous = filteredHeading
-        // Circular low-pass filter: correct across the 359°/0° boundary.
         filteredHeading = if (previous == null) raw else {
             val delta = ((raw - previous + 540.0) % 360.0) - 180.0
             (previous + delta * 0.12 + 360.0) % 360.0
@@ -119,8 +171,7 @@ class MainActivity : Activity(), SensorEventListener {
     private fun renderHeading(heading: Double) {
         val rounded = Math.round(heading).toInt() % 360
         val dirs = arrayOf("N", "NE", "E", "SE", "S", "SW", "W", "NW")
-        val label = dirs[((rounded + 22) / 45) % 8]
-        directionText.text = label
+        directionText.text = dirs[((rounded + 22) / 45) % 8]
         degreesText.text = String.format(Locale.getDefault(), "%03d°", rounded)
         headingText.text = String.format(Locale.getDefault(), "%.1f°", heading)
         compassView.setHeading(heading.toFloat())
@@ -135,8 +186,6 @@ class MainActivity : Activity(), SensorEventListener {
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
-        if (sensor?.type == Sensor.TYPE_MAGNETIC_FIELD || sensor?.type == Sensor.TYPE_ROTATION_VECTOR) {
-            magneticAccuracy = accuracy
-        }
+        if (sensor?.type == Sensor.TYPE_MAGNETIC_FIELD || sensor?.type == Sensor.TYPE_ROTATION_VECTOR) magneticAccuracy = accuracy
     }
 }
