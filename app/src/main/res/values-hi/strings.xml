@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">Surwi</string>
+    <string name="brand_tagline">वैदिक कम्पास • वास्तु • पंचांग</string>
+    <string name="language_english">English</string>
+    <string name="language_hindi">हिन्दी</string>
+    <string name="compass">कम्पास 360</string>
+    <string name="vastu">वास्तु शास्त्र</string>
+    <string name="numerology">अंक ज्योतिष</string>
+    <string name="kundli">जन्म कुंडली</string>
+    <string name="panchang">दैनिक पंचांग</string>
+    <string name="festivals">हिन्दू कैलेंडर और त्योहार</string>
+    <string name="muhurat">मुहूर्त</string>
+    <string name="profile">जन्म विवरण</string>
+    <string name="select_city">अपना शहर चुनें</string>
+    <string name="calculation_disclaimer">पारंपरिक मार्गदर्शन; वैज्ञानिक भविष्यवाणी नहीं।</string>
+</resources>
