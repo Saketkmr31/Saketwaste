@@ -1,15 +1,41 @@
-# Surwi Compass 360
+# Surwi
 
-Native Android compass for phones with accelerometer and magnetometer sensors.
-- Uses TYPE_ACCELEROMETER and TYPE_MAGNETIC_FIELD.
-- Calculates heading using Android SensorManager rotation matrix/orientation APIs.
-- Displays eight-point direction, degrees and magnetometer accuracy status.
-- Includes traditional Vastu / puja direction reference.
+Surwi is being developed as a public-facing bilingual (Hindi + English), hybrid Android Vedic lifestyle companion.
 
-## Build
-GitHub Actions builds a debug APK on pushes to main and on manual workflow dispatch.
-Open Actions > Build Surwi Compass APK > latest run > Artifacts > surwi-compass-debug-apk.
-Install the downloaded APK on the Samsung Galaxy S24. You may need to allow installation from the browser or file manager.
+## Product direction
+- Compass 360 and calibration
+- Vastu Shastra: 16 direction sectors and room/entrance guidance
+- Numerology: Mulank, Bhagyank and name-number calculations
+- Vedic astrology: Janma Kundli, Rashi, Lagna, Nakshatra, graha positions and Dasha
+- Hindu Panchang: Tithi, Nakshatra, Yoga, Karana, sunrise/sunset and regional festivals
+- Muhurat and observance calendar
 
-## Sensor notes
-No location permission, GPS or internet is required for compass operation. It reports magnetic north, not true north. Hold the phone flat, calibrate with a figure-eight motion and keep away from magnetic cases, speakers and metal objects. Accuracy depends on sensor calibration and local interference.
+## Engineering principles
+- Offline-first for compass, saved profiles, Vastu reference content and deterministic calculators.
+- Hybrid sync for location-specific Panchang, calendar updates and remote content.
+- Explicit user-selected birthplace/city; no silent precise-location collection.
+- Every astronomical result must identify calculation engine, convention, timezone, source and calculation timestamp.
+- Never display guessed Kundli, Panchang, festival or Muhurat values.
+
+See ARCHITECTURE.md for module boundaries, conventions and release gates.
+
+## Current implementation
+- Existing compass UI and sensor pipeline.
+- Domain foundation for 16 Vastu direction sectors.
+- Numerology arithmetic for Mulank, Bhagyank and optional Chaldean name number.
+- Birth profile validation.
+- Panchang and Vedic chart provider contracts; a validated/licensed calculation engine is not configured yet.
+- Local language and city preference storage.
+
+## Build and test
+GitHub Actions builds a debug APK on pushes to main and manual workflow dispatch. Open Actions → Build Surwi Compass APK → latest run → Artifacts → surwi-compass-debug-apk.
+
+A debug APK is for device testing only. It is not a signed Play Store release.
+
+## Privacy and permissions
+The compass does not need GPS. The product is designed to use a city/place explicitly selected by the user for local calendar calculations. Birth details are sensitive personal data: they must not be sent to a server or persisted until explicit consent and privacy design are implemented. Do not add analytics or advertising SDKs without a documented data review.
+
+## References
+- India Meteorological Department, Rashtriya Panchang: https://mausam.imd.gov.in/responsive/rashtriyPanchang.php
+- Android app architecture: https://developer.android.com/topic/architecture
+- Android offline-first architecture: https://developer.android.com/topic/architecture/data-layer/offline-first
