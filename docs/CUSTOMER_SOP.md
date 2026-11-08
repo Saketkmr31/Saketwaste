@@ -185,3 +185,12 @@ A production release must not be approved until all applicable checks pass:
 ---
 
 **Customer-facing statement:** Vedic Compass 360 provides direction, selected Vastu reference, sunrise-tithi and numerology tools in its current beta. Advanced astrology and auspicious-time calculations are being validated and are not represented as live calculations until their calculation engines and verification gates are complete.
+
+
+## 17. Commercial astrology engine status
+
+The product has selected TantraGurukul / Tantrakulam's Commercial API as the intended proprietary Jyotish provider, subject to a signed commercial grant and paid production key. The provider's published Commercial plan currently lists Panchanga, Muhurta, Kundali, divisional charts, Dasha and matching; some PDF/mobile-pack and bulk calendar features are Enterprise-only.
+
+**This integration is not live in the current APK.** The app must not display vendor-derived Kundli, full Panchang or Muhurat results until the commercial licence is active, the secure first-party gateway and authentication are deployed, privacy consent is implemented, and calculation regression tests pass. Existing local Tithi output remains a limited feature, not a complete Panchang.
+
+Commercial engine details and release gates: see the product's Commercial Engine Integration document in the source repository.
