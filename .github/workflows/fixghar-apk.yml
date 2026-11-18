@@ -1,0 +1,33 @@
+name: FixGhar Android APK
+on:
+  push:
+    branches:
+      - fixghar-apk-build-2026-11
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+      - name: Extract Android project
+        run: mkdir FixGhar && unzip -q fixghar_source.zip -d FixGhar
+      - name: Install Android SDK 35
+        run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Compile installable APK
+        working-directory: FixGhar
+        run: gradle --no-daemon assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FixGhar-Android-APK
+          path: FixGhar/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
